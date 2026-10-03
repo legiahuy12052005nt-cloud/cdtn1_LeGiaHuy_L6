@@ -28,10 +28,9 @@ Dự án tự động hóa quá trình trích xuất và làm sạch dữ liệu
 * `src/etl/`: Chứa các kịch bản (script) Python xử lý nghiệp vụ ETL (Trích xuất - Biến đổi - Tải dữ liệu).
 * `dashboards/`: Nơi lưu trữ các tệp Power BI (`.pbix`) thiết kế báo cáo trực quan.
 * `requirements.txt`: Danh sách các thư viện phụ thuộc của Python.
-
+* ` sẽ cập nhật thêm trong quá trình làm bài 
 ## 5. Kiểm thử
-Chạy lệnh sau để thực hiện smoke test luồng ETL cơ bản:
-`python src/etl/smoke_test.py` → Nếu terminal không báo lỗi và dữ liệu đầu ra được tạo thành công, test PASS.
+- Sẽ cập nhật trong quá trình làm bài
 
 ## 6. Trạng thái hiện tại
 - [x] Khởi tạo project, script smoke test chạy được (buổi 2)
