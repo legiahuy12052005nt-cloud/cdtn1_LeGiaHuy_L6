@@ -29,4 +29,4 @@
 > **"Tôi xác nhận đã đọc, hiểu và chịu trách nhiệm về toàn bộ nội dung nộp."**
 
 * **Chữ ký / Họ tên sinh viên:** Lê Gia Huy  
-* **Ngày khai báo:** 26/09/2026
+* **Ngày khai báo:** 09/10/2026
