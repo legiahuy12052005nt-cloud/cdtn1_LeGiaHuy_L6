@@ -1,4 +1,4 @@
-# Kho dữ liệu bán hàng và báo cáo doanh thu
+# Xây dựng kho dữ liệu bán hàng và Dashboard phân tích doanh thu cho Mekong Mobile
 
 **Sinh viên:**
 Lê Gia Huy - 2374802010175 - Lớp: 71K29CNTT02
