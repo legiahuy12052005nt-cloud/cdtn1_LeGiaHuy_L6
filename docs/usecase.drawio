@@ -1,0 +1,97 @@
+<mxfile host="app.diagrams.net" agent="VSCode">
+  <diagram id="usecase" name="usecase">
+    <mxGraphModel dx="1908" dy="1065" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="da" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff1d6;strokeColor=#5e7386;fontSize=14;align=center;verticalAlign=middle;" value="&lt;br&gt;Chuyên viên dữ liệu" vertex="1">
+          <mxGeometry height="65" width="175" x="45" y="255" as="geometry" />
+        </mxCell>
+        <mxCell id="mg" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff1d6;strokeColor=#5e7386;fontSize=14;align=center;verticalAlign=middle;" value="&lt;br&gt;Ban giám đốc" vertex="1">
+          <mxGeometry height="65" width="175" x="880" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="sm" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff1d6;strokeColor=#5e7386;fontSize=14;align=center;verticalAlign=middle;" value="&lt;br&gt;Quản lý cửa hàng" vertex="1">
+          <mxGeometry height="65" width="175" x="880" y="495" as="geometry" />
+        </mxCell>
+        <mxCell id="u1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e9eef8;strokeColor=#5e7386;fontSize=14;align=center;verticalAlign=middle;" value="UC01 Đọc dữ liệu nguồn CSV" vertex="1">
+          <mxGeometry height="62" width="425" x="315" y="35" as="geometry" />
+        </mxCell>
+        <mxCell id="u2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e9eef8;strokeColor=#5e7386;fontSize=14;align=center;verticalAlign=middle;" value="UC02 Kiểm tra và chuẩn hóa dữ liệu" vertex="1">
+          <mxGeometry height="62" width="425" x="315" y="127" as="geometry" />
+        </mxCell>
+        <mxCell id="u3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e9eef8;strokeColor=#5e7386;fontSize=14;align=center;verticalAlign=middle;" value="UC03 Đối soát giá trị bán hàng" vertex="1">
+          <mxGeometry height="62" width="425" x="315" y="219" as="geometry" />
+        </mxCell>
+        <mxCell id="u4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e9eef8;strokeColor=#5e7386;fontSize=14;align=center;verticalAlign=middle;" value="UC04 Nạp dữ liệu vào Data Warehouse" vertex="1">
+          <mxGeometry height="62" width="425" x="315" y="311" as="geometry" />
+        </mxCell>
+        <mxCell id="u5" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e2f1ed;strokeColor=#5e7386;fontSize=14;align=center;verticalAlign=middle;" value="UC05 Xem báo cáo tổng quan" vertex="1">
+          <mxGeometry height="62" width="425" x="315" y="403" as="geometry" />
+        </mxCell>
+        <mxCell id="u6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e2f1ed;strokeColor=#5e7386;fontSize=14;align=center;verticalAlign=middle;" value="UC06 Lọc/so sánh doanh thu theo cửa hàng" vertex="1">
+          <mxGeometry height="62" width="425" x="315" y="495" as="geometry" />
+        </mxCell>
+        <mxCell id="u7" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e2f1ed;strokeColor=#5e7386;fontSize=14;align=center;verticalAlign=middle;" value="UC07 Xem Top sản phẩm" vertex="1">
+          <mxGeometry height="62" width="425" x="315" y="587" as="geometry" />
+        </mxCell>
+        <mxCell id="e0" edge="1" parent="1" source="da" style="endArrow=block;html=1;rounded=0;strokeWidth=2;edgeStyle=orthogonalEdgeStyle;fontSize=11;" target="u1" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="250" y="287.5" />
+              <mxPoint x="250" y="66" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e1" edge="1" parent="1" source="da" style="endArrow=block;html=1;rounded=0;strokeWidth=2;edgeStyle=orthogonalEdgeStyle;fontSize=11;" target="u2" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="280" y="287.5" />
+              <mxPoint x="280" y="158" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e2" edge="1" parent="1" source="da" style="endArrow=block;html=1;rounded=0;strokeWidth=2;edgeStyle=orthogonalEdgeStyle;fontSize=11;" target="u3" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" edge="1" parent="1" source="da" style="endArrow=block;html=1;rounded=0;strokeWidth=2;edgeStyle=orthogonalEdgeStyle;fontSize=11;" target="u4" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" edge="1" parent="1" source="mg" style="endArrow=block;html=1;rounded=0;strokeWidth=2;edgeStyle=orthogonalEdgeStyle;fontSize=11;" target="u5" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="810" y="132.5" />
+              <mxPoint x="810" y="434" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e5" edge="1" parent="1" source="mg" style="endArrow=block;html=1;rounded=0;strokeWidth=2;edgeStyle=orthogonalEdgeStyle;fontSize=11;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="u6" value="">
+          <mxGeometry relative="1" x="0.1301" as="geometry">
+            <Array as="points">
+              <mxPoint x="967.5" y="480" />
+              <mxPoint x="527.5" y="480" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e6" edge="1" parent="1" source="sm" style="endArrow=block;html=1;rounded=0;strokeWidth=2;edgeStyle=orthogonalEdgeStyle;fontSize=11;" target="u6" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="810" y="526" />
+              <mxPoint x="810" y="526" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="EUFvFKrxEj7SVBa2cxj9-4" edge="1" parent="1" source="mg" style="endArrow=block;html=1;rounded=0;strokeWidth=2;edgeStyle=orthogonalEdgeStyle;fontSize=11;entryX=1;entryY=0.5;entryDx=0;entryDy=0;exitX=0;exitY=0.75;exitDx=0;exitDy=0;" target="u7" value="">
+          <mxGeometry relative="1" x="0.0695" as="geometry">
+            <Array as="points">
+              <mxPoint x="870" y="148.8" />
+              <mxPoint x="870" y="631.5" />
+              <mxPoint x="740" y="631.5" />
+            </Array>
+            <mxPoint x="870" y="150" as="sourcePoint" />
+            <mxPoint x="860" y="631.5" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

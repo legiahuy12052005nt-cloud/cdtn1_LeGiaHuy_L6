@@ -1,0 +1,107 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="L6-flow" name="Data Flow - L6">
+    <mxGraphModel dx="1367" dy="763" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1450" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="files" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f0f9;strokeColor=#52718b;fontSize=15;align=center;verticalAlign=middle;" value="4 CSV nguồn&lt;br&gt;Orders | Items | Products | Stores" vertex="1">
+          <mxGeometry height="95" width="280" x="40" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="extract" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e3f4ef;strokeColor=#52718b;fontSize=15;align=center;verticalAlign=middle;" value="EXTRACT&lt;br&gt;Giữ metadata file và dòng" vertex="1">
+          <mxGeometry height="95" width="250" x="395" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="staging" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e3f4ef;strokeColor=#52718b;fontSize=15;align=center;verticalAlign=middle;" value="STAGING&lt;br&gt;Lưu dữ liệu thô để truy xuất" vertex="1">
+          <mxGeometry height="95" width="265" x="725" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="transform" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff1d6;strokeColor=#52718b;fontSize=15;align=center;verticalAlign=middle;" value="VALIDATE + TRANSFORM&lt;br&gt;Ngày, tiền, mã khóa, ±10%" vertex="1">
+          <mxGeometry height="95" width="295" x="1070" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="error" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fbe5e2;strokeColor=#52718b;fontSize=15;align=center;verticalAlign=middle;" value="ERROR LOG / RECONCILIATION&lt;br&gt;Bản ghi cách ly + lý do" vertex="1">
+          <mxGeometry height="105" width="305" x="1060" y="310" as="geometry" />
+        </mxCell>
+        <mxCell id="date" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f0f9;strokeColor=#52718b;fontSize=15;align=center;verticalAlign=middle;" value="Dim_Date" vertex="1">
+          <mxGeometry height="70" width="210" x="100" y="350" as="geometry" />
+        </mxCell>
+        <mxCell id="prod" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f0f9;strokeColor=#52718b;fontSize=15;align=center;verticalAlign=middle;" value="Dim_Product" vertex="1">
+          <mxGeometry height="70" width="210" x="380" y="350" as="geometry" />
+        </mxCell>
+        <mxCell id="store" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f0f9;strokeColor=#52718b;fontSize=15;align=center;verticalAlign=middle;" value="Dim_Store" vertex="1">
+          <mxGeometry height="70" width="210" x="660" y="350" as="geometry" />
+        </mxCell>
+        <mxCell id="fact" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e3f4ef;strokeColor=#52718b;fontSize=15;align=center;verticalAlign=middle;" value="Fact_Sales&lt;br&gt;1 dòng = 1 dòng chi tiết nguồn" vertex="1">
+          <mxGeometry height="92" width="460" x="360" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="bi" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e6efff;strokeColor=#52718b;fontSize=15;align=center;verticalAlign=middle;" value="Power BI&lt;br&gt;Overview | Product | Store" vertex="1">
+          <mxGeometry height="92" width="360" x="930" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_files_extract" edge="1" parent="1" source="files" style="endArrow=block;html=1;edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=2;fontSize=11;" target="extract" value="Read CSV">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_extract_staging" edge="1" parent="1" source="extract" style="endArrow=block;html=1;edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=2;fontSize=11;" target="staging" value="Raw rows">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_staging_transform" edge="1" parent="1" source="staging" style="endArrow=block;html=1;edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=2;fontSize=11;" target="transform" value="Validated input">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_transform_error" edge="1" parent="1" source="transform" style="endArrow=block;html=1;edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=2;fontSize=11;" target="error" value="Invalid / unmatched">
+          <mxGeometry relative="1" x="0.0333" y="-63" as="geometry">
+            <mxPoint x="-63" y="55" as="offset" />
+            <Array as="points">
+              <mxPoint x="1212.5" y="190" />
+              <mxPoint x="1212.5" y="190" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_transform_date" edge="1" parent="1" source="transform" style="endArrow=block;html=1;edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=2;fontSize=11;" target="date" value="Date keys">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1217.5" y="260" />
+              <mxPoint x="205" y="260" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_transform_prod" edge="1" parent="1" source="transform" style="endArrow=block;html=1;edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=2;fontSize=11;" target="prod" value="Product keys">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1217.5" y="210" />
+              <mxPoint x="485" y="210" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_transform_store" edge="1" parent="1" source="transform" style="endArrow=block;html=1;edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=2;fontSize=11;" target="store" value="Store keys">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1217.5" y="190" />
+              <mxPoint x="765" y="190" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_date_fact" edge="1" parent="1" source="date" style="endArrow=block;html=1;edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=2;fontSize=11;" target="fact" value="date_key">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="205" y="510" />
+              <mxPoint x="590" y="510" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_prod_fact" edge="1" parent="1" source="prod" style="endArrow=block;html=1;edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=2;fontSize=11;" target="fact" value="product_key">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_store_fact" edge="1" parent="1" source="store" style="endArrow=block;html=1;edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=2;fontSize=11;" target="fact" value="store_key">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_transform_fact" edge="1" parent="1" source="transform" style="endArrow=block;html=1;edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=2;fontSize=11;" target="fact" value="Valid detail rows">
+          <mxGeometry relative="1" x="0.0605" as="geometry">
+            <Array as="points">
+              <mxPoint x="1250" y="230" />
+              <mxPoint x="620" y="230" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_fact_bi" edge="1" parent="1" source="fact" style="endArrow=block;html=1;edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=2;fontSize=11;" target="bi" value="Aggregations">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

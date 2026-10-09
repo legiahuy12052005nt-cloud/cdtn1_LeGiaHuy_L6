@@ -1,0 +1,15 @@
+.env
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
+.ipynb_checkpoints/
+*.pyc
+*.log
+.vscode/settings.json
+.idea/
+data/raw/
+data/private/
+data/processed/
+*.pbix
+docs_backup_BT1/

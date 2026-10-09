@@ -1,0 +1,45 @@
+<mxfile host="app.diagrams.net" agent="VSCode">
+  <diagram id="erd" name="erd">
+    <mxGraphModel dx="1328" dy="741" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="date" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e9eef8;strokeColor=#5e7386;fontSize=14;align=center;verticalAlign=middle;" value="Dim_Date&lt;br&gt;PK date_key&lt;br&gt;full_date | day | month | quarter | year" vertex="1">
+          <mxGeometry height="135" width="250" x="95" y="65" as="geometry" />
+        </mxCell>
+        <mxCell id="prod" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e9eef8;strokeColor=#5e7386;fontSize=14;align=center;verticalAlign=middle;" value="Dim_Product&lt;br&gt;PK product_key&lt;br&gt;product_id UNIQUE&lt;br&gt;product_name | category | brand" vertex="1">
+          <mxGeometry height="135" width="280" x="450" y="65" as="geometry" />
+        </mxCell>
+        <mxCell id="store" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e9eef8;strokeColor=#5e7386;fontSize=14;align=center;verticalAlign=middle;" value="Dim_Store&lt;br&gt;PK store_key&lt;br&gt;store_code UNIQUE&lt;br&gt;store_name | city | district" vertex="1">
+          <mxGeometry height="135" width="270" x="835" y="65" as="geometry" />
+        </mxCell>
+        <mxCell id="fact" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e2f1ed;strokeColor=#5e7386;fontSize=14;align=center;verticalAlign=middle;" value="Fact_Sales&lt;br&gt;PK sales_key&lt;br&gt;FK date_key | FK product_key | FK store_key&lt;br&gt;order_id | source_file_id | source_row_number&lt;br&gt;quantity | unit_price | reported_sales_amount&lt;br&gt;calculated_sales_amount | difference_amount | flag" vertex="1">
+          <mxGeometry height="220" width="490" x="355" y="355" as="geometry" />
+        </mxCell>
+        <mxCell id="e0" edge="1" parent="1" source="date" style="endArrow=block;html=1;rounded=0;strokeWidth=2;edgeStyle=orthogonalEdgeStyle;fontSize=11;" target="fact" value="1 : N">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="410" y="132.5" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e1" edge="1" parent="1" source="prod" style="endArrow=block;html=1;rounded=0;strokeWidth=2;edgeStyle=orthogonalEdgeStyle;fontSize=11;" target="fact" value="1 : N">
+          <mxGeometry relative="1" x="0.6024" as="geometry">
+            <Array as="points">
+              <mxPoint x="600" y="230" />
+              <mxPoint x="600" y="230" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e2" edge="1" parent="1" source="store" style="endArrow=block;html=1;rounded=0;strokeWidth=2;edgeStyle=orthogonalEdgeStyle;fontSize=11;" target="fact" value="1 : N">
+          <mxGeometry relative="1" x="0.0019" as="geometry">
+            <Array as="points">
+              <mxPoint x="970" y="270" />
+              <mxPoint x="600" y="270" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
