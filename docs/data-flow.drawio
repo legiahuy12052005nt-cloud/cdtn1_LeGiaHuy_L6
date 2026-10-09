@@ -85,10 +85,20 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="edge_prod_fact" edge="1" parent="1" source="prod" style="endArrow=block;html=1;edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=2;fontSize=11;" target="fact" value="product_key">
-          <mxGeometry relative="1" as="geometry" />
+          <mxGeometry relative="1" x="0.1442" as="geometry">
+            <Array as="points">
+              <mxPoint x="485" y="490" />
+              <mxPoint x="560" y="490" />
+            </Array>
+          </mxGeometry>
         </mxCell>
         <mxCell id="edge_store_fact" edge="1" parent="1" source="store" style="endArrow=block;html=1;edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=2;fontSize=11;" target="fact" value="store_key">
-          <mxGeometry relative="1" as="geometry" />
+          <mxGeometry relative="1" x="0.1925" as="geometry">
+            <Array as="points">
+              <mxPoint x="765" y="490" />
+              <mxPoint x="640" y="490" />
+            </Array>
+          </mxGeometry>
         </mxCell>
         <mxCell id="edge_transform_fact" edge="1" parent="1" source="transform" style="endArrow=block;html=1;edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=2;fontSize=11;" target="fact" value="Valid detail rows">
           <mxGeometry relative="1" x="0.0605" as="geometry">
