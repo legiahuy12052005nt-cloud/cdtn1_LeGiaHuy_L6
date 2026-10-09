@@ -3,7 +3,7 @@
 **Sinh viên:**
 Lê Gia Huy - 2374802010175 - Lớp: 71K29CNTT02
 
-**Link git:** [https://github.com/...](https://github.com/legiahuy12052005nt-cloud/cdtn1_LegiaHuy_L6)
+**Link git:** [https://github.com/legiahuy12052005nt-cloud/cdtn1_LegiaHuy_L6](https://github.com/legiahuy12052005nt-cloud/cdtn1_LegiaHuy_L6)
 
 **Học phần:**
 Chuyên đề Tốt nghiệp 1 - Lớp HP: 261_71ITGR40203_02
