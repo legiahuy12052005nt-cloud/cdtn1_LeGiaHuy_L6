@@ -19,6 +19,7 @@
 | :--- | :--- | :--- | :--- |
 | **Gemini** | Liệt kê tất cả các file dữ liệu cần dùng cho bài làm | áp dụng cho phần nhập vào phiếu phạm vi  | em đã vào từng file ecxel đó kiểm chứng xem đúng dữ liệu không. Sau đó nhập vào phiếu phạm vi |
 | **Gemini** | Hãy giải thích chi tiết cho tôi hiểu hơn về phần user story dự kiến và tại sao phải có nó | áp dụng cho phần nhập vào phiếu phạm vi | em đã đọc qua nội dung và hiểu được nó . Sau đó nhập vào phiếu phạm vi |
+| **Gemini** | Hỗ trợ gợi ý xây dựng mô hình trên draw.io | áp dụng cho phần tạo kiến trúc cho bài | em đã đọc qua nội dung và kiểm tra xem đúng với yêu cầu của bài hay chưa . Sau đó vẽ lại trên draw.io |
 
 
 ---
