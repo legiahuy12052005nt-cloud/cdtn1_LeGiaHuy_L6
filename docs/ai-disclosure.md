@@ -1,5 +1,5 @@
 # BẢNG KHAI BÁO SỬ DỤNG CÔNG CỤ AI HỖ TRỢ
-**Học phần:** Chuyên đề Tốt nghiệp 1 (Specialized Graduation Topic I)  
+**Học phần:** Chuyên đề Tốt nghiệp 1 
 **Học kỳ:** HK1, Năm học 2026 – 2027  
 **Bài nộp:**  Bài tập 1 (BT1)
 
