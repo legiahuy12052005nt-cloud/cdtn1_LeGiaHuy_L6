@@ -13,3 +13,9 @@ data/private/
 data/processed/
 *.pbix
 docs_backup_BT1/
+# Customer personal data
+data/raw/customers_raw.csv
+# Customer personal data
+data/raw/customers_raw.csv
+data/raw/orders_2024_2026.csv
+data/raw/*.csv
