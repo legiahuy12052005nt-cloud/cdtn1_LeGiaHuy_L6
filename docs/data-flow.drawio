@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net">
   <diagram id="L6-flow" name="Data Flow - L6">
-    <mxGraphModel dx="1367" dy="763" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1450" pageHeight="900" math="0" shadow="0">
+    <mxGraphModel dx="1908" dy="994" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1450" pageHeight="900" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -110,6 +110,9 @@
         </mxCell>
         <mxCell id="edge_fact_bi" edge="1" parent="1" source="fact" style="endArrow=block;html=1;edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=2;fontSize=11;" target="bi" value="Aggregations">
           <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="U_738HYY4Fv1ClkRYfYQ-1" parent="1" style="whiteSpace=wrap;html=1;" value="&lt;font style=&quot;font-size: 14px;&quot;&gt;CHÚ THÍCH DATA FLOW&lt;/font&gt;&lt;div&gt;&lt;font size=&quot;3&quot;&gt;Data Source (xanh dương):Nguồn dữ liệu CSV đầu vào.&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font size=&quot;3&quot;&gt;Process (xanh lá / vàng):Các bước Extract,&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font size=&quot;3&quot;&gt;&amp;nbsp;Validate và Transform.Staging (xanh nhạt):Lưu dữ liệu trung gian và dòng truy xuất.Data Warehouse:Dim_Date, Dim_Product, Dim_Store và Fact_Sales.&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font size=&quot;3&quot;&gt;Error Log (hồng):Lưu bản ghi không hợp lệ và lý do lỗi.&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font size=&quot;3&quot;&gt;Data Flow (mũi tên):Hướng di chuyển dữ liệu giữa các thành phầ&lt;/font&gt;n.&lt;/div&gt;" vertex="1">
+          <mxGeometry height="160" width="840" x="290" y="700" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
