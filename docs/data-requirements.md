@@ -91,3 +91,42 @@
 - Ghi nhận tệp, dòng, trường và mã lỗi cho bản ghi cách ly.
 - Đối với các dòng thành tiền ±10%, bảo toàn cả giá trị gốc và tính toán; ghi trạng thái chờ xác nhận.
 
+## Bài tập 2:
+
+## Quy tắc xử lý dữ liệu thiếu ngày trong Data Warehouse
+
+### 1. Kết quả kiểm tra dữ liệu
+
+- Tổng số đơn hàng nguồn: 26.000.
+- Số đơn hàng thiếu ngày: 114.
+- Tổng số dòng chi tiết đơn hàng: 35.697.
+- Số dòng Fact_Sales thiếu date_key: 154.
+- Số dòng Fact_Sales có ngày nguồn nhưng không liên kết được Dim_Date: 0.
+
+### 2. Quyết định xử lý
+
+- Không tự động gán ngày giả cho đơn hàng thiếu ngày.
+- Không xóa 154 dòng chi tiết đơn hàng khỏi Fact_Sales.
+- Giữ date_key ở trạng thái NULL để phản ánh đúng dữ liệu nguồn.
+- Các dòng thiếu date_key không được đưa vào phép tổng hợp doanh thu theo ngày, tháng hoặc năm.
+- Các dòng thiếu ngày vẫn được tính trong tổng doanh thu toàn bộ dữ liệu khi chỉ tiêu không yêu cầu lọc thời gian.
+- Số lượng dòng thiếu ngày phải được theo dõi như một chỉ tiêu chất lượng dữ liệu.
+
+### 3. Lý do kỹ thuật
+
+Grain của Fact_Sales là một dòng chi tiết đơn hàng nguồn.
+
+Việc xóa các dòng thiếu ngày sẽ làm mất dữ liệu bán hàng và ảnh hưởng đến tổng doanh thu.
+
+Việc tự gán ngày sẽ làm sai lệch báo cáo doanh thu theo thời gian.
+
+Do đó, hệ thống giữ nguyên dữ liệu nguồn và phân biệt rõ các chỉ tiêu tổng doanh thu toàn bộ dữ liệu với doanh thu có ngày hợp lệ.
+
+### 4. Quy tắc kiểm tra
+
+- Tổng số dòng Fact_Sales phải bằng tổng số dòng chi tiết hợp lệ.
+- Không phát sinh source_line_id trùng lặp.
+- Dòng thiếu ngày phải giữ date_key = NULL.
+- Số dòng thiếu date_key phải được thống kê sau mỗi lần chạy ETL.
+
+
