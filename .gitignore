@@ -19,3 +19,9 @@ data/raw/customers_raw.csv
 data/raw/customers_raw.csv
 data/raw/orders_2024_2026.csv
 data/raw/*.csv
+data/rejected/
+data/processed/
+data/raw/*.csv
+data/rejected/
+data/processed/
+data/warehouse/
