@@ -169,29 +169,63 @@ Kết quả đã xác nhận trên môi trường phát triển:
 - Có kiểm thử giá trị biên: số lượng bằng 0.
 - Có kiểm thử ngoại lệ: số lượng âm.
 
+
 ### 3.6. Mở Dashboard Power BI
 
-Bước 7 – Mở Power BI Desktop.
+Dự án cung cấp Power BI Template tại:
 
-Mở file báo cáo cục bộ:
+`powerbi/Mekong_Mobile_Sales_Dashboard_Demo_Final.pbit`
 
-powerbi/Mekong_Mobile_Sales_Dashboard.pbix
+Template chứa cấu trúc Dashboard, các biểu đồ, Measure DAX
+và mô hình dữ liệu, không đóng gói dữ liệu đã tải vào báo cáo.
 
-Trong Power BI Desktop, chọn Home → Refresh để cập nhật dữ liệu từ các file CSV Warehouse.
+**Bước 7 – Chuẩn bị dữ liệu mẫu**
 
-Dashboard có 3 trang:
+Sao chép 4 file CSV trong `data/sample/` vào `data/raw/`
+trước khi chạy ETL.
 
-- Tổng Quan Doanh Thu.
-- Phân Tích Sản Phẩm.
-- Phân Tích Cửa Hàng.
+**Bước 8 – Chạy ETL**
 
-Dashboard gồm các KPI doanh thu, đơn hàng, sản phẩm bán, giá trị đơn hàng trung bình và tăng trưởng doanh thu theo tháng.
+```powershell
+.\.venv\Scripts\python.exe run_etl.py
+```
 
-Lưu ý:
+Lệnh tạo 4 bảng CSV Warehouse và SQLite Database.
 
-- Power BI hiện đọc các file CSV Warehouse, chưa kết nối trực tiếp với SQLite.
-- File PBIX chứa dữ liệu thực tế được giữ cục bộ, chưa đưa lên GitHub Public.
-- Người clone repository cần có Power BI Desktop và file PBIX được cung cấp qua kênh phù hợp để mở đúng Dashboard hiện tại.
+**Bước 9 – Mở Dashboard**
+
+Mở file `Mekong_Mobile_Sales_Dashboard_Demo_Final.pbit`
+bằng Power BI Desktop.
+
+Khi hộp thoại Parameter xuất hiện:
+
+- Parameter: `ProjectFolder`
+- Giá trị: Đường dẫn tuyệt đối đến thư mục gốc dự án vừa clone.
+
+Ví dụ: Nếu dự án được clone vào `C:\Projects\cdtn1_LeGiaHuy_L6`,
+nhập chính đường dẫn đó vào `ProjectFolder`.
+
+Nhấn **Load** để Power BI đọc dữ liệu từ thư mục
+`data/warehouse/` và hiển thị Dashboard.
+
+Dashboard gồm 3 trang:
+
+1. Tổng Quan Doanh Thu.
+2. Phân Tích Sản Phẩm.
+3. Phân Tích Cửa Hàng.
+
+Bộ dữ liệu mẫu có kết quả kỳ vọng:
+
+| KPI | Giá trị |
+|---|---:|
+| Tổng doanh thu | 23.500.000 VND |
+| Tổng đơn hàng | 3 |
+| Tổng sản phẩm bán | 5 |
+| Giá trị đơn hàng trung bình | 7.833.333 VND |
+
+**Lưu ý:** File `.pbix` sử dụng dữ liệu đầy đủ được giữ
+cục bộ và không chia sẻ trên GitHub Public.
+
 
 ### 3.7. Kiểm tra kết quả
 
