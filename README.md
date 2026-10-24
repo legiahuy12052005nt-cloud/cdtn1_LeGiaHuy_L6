@@ -78,88 +78,137 @@ Kết quả được lưu tại:
 - `data/warehouse/Fact_Sales.csv`
 
 
+
 ## 3. Hướng dẫn chạy
 
-### 3.1. Chuẩn bị dự án
+### 3.1. Clone repository
 
-Clone repository từ GitHub:
+Mở PowerShell tại thư mục muốn lưu dự án.
+
+Bước 1 – Clone mã nguồn:
 
 ```powershell
 git clone https://github.com/legiahuy12052005nt-cloud/cdtn1_LegiaHuy_L6.git
 ```
 
-Di chuyển vào thư mục dự án:
+Bước 2 – Di chuyển vào thư mục dự án:
 
 ```powershell
 cd cdtn1_LegiaHuy_L6
 ```
 
-Cài đặt thư viện Python:
+### 3.2. Chuẩn bị môi trường Python
+
+Yêu cầu Python 3.10 trở lên.
+
+Bước 3 – Tạo môi trường ảo:
 
 ```powershell
-python -m pip install -r requirements.txt
+python -m venv .venv
 ```
 
-### 3.2. Chuẩn bị dữ liệu nguồn
-
-Đặt các file dữ liệu CSV vào thư mục `data/raw/`:
-
-- `orders_2024_2026.csv`
-- `order_items.csv`
-- `products.csv`
-- `stores.csv`
-
-File `customers_raw.csv` thuộc bộ dữ liệu nghiên cứu,
-nhưng chưa được sử dụng trong pipeline Star Schema hiện tại.
-
-Lưu ý: Các file dữ liệu thô không được đưa vào các
-commit mới trên GitHub Public.
-
-### 3.3. Chạy quy trình ETL
-
-Tại thư mục gốc của dự án, chạy:
+Bước 4 – Cài đặt thư viện:
 
 ```powershell
-python run_etl.py
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
 
-Quy trình sẽ thực hiện các công việc:
+### 3.3. Chuẩn bị dữ liệu đầu vào
 
-1. Đọc dữ liệu nguồn CSV (Extract).
-2. Chuẩn hóa tên cột và kiểm tra dữ liệu (Transform, Quality).
-3. Ghi nhận các dòng không hợp lệ vào Error Log.
-4. Đối soát doanh thu nguồn và doanh thu tính toán.
-5. Xây dựng ba bảng Dimension và một bảng Fact.
-6. Xuất kết quả vào thư mục `data/warehouse/`.
+Đặt 4 file CSV vào thư mục `data/raw/`:
 
-### 3.4. Kiểm tra kết quả
+- orders_2024_2026.csv
+- order_items.csv
+- products.csv
+- stores.csv
 
-Sau khi ETL chạy thành công, kiểm tra bốn file:
+Dữ liệu khách hàng thô không cần thiết cho pipeline hiện tại.
 
-- `data/warehouse/Dim_Date.csv`
-- `data/warehouse/Dim_Product.csv`
-- `data/warehouse/Dim_Store.csv`
-- `data/warehouse/Fact_Sales.csv`
+Lưu ý: Dữ liệu gốc không được đưa vào commit mới trên GitHub Public.
 
-Kết quả kiểm thử trên bộ dữ liệu hiện tại:
+Hiện repository chưa cung cấp bộ dữ liệu mẫu công khai để chạy ETL ngay sau khi clone. Cần chuẩn bị dữ liệu theo đúng cấu trúc nguồn hoặc sử dụng bộ dữ liệu mẫu đã được ẩn danh khi bộ dữ liệu đó được bổ sung.
 
-| Bảng | Số dòng |
+### 3.4. Chạy toàn bộ ETL và SQLite DWH
+
+Bước 5 – Chạy quy trình chính:
+
+```powershell
+.\.venv\Scripts\python.exe run_etl.py
+```
+
+Quy trình thực hiện:
+
+1. Đọc dữ liệu nguồn CSV.
+2. Chuẩn hóa và kiểm tra dữ liệu.
+3. Đối soát doanh thu.
+4. Xây dựng Fact_Sales và 3 bảng Dimension.
+5. Xuất dữ liệu ra CSV Warehouse.
+6. Tạo SQLite Data Warehouse với khóa chính, khóa ngoại và các ràng buộc dữ liệu.
+
+Kết quả được lưu tại:
+
+- data/processed/clean_order_items.csv
+- data/rejected/rejected_order_items.csv
+- data/warehouse/Dim_Date.csv
+- data/warehouse/Dim_Product.csv
+- data/warehouse/Dim_Store.csv
+- data/warehouse/Fact_Sales.csv
+- data/warehouse/mekong_mobile.db
+
+### 3.5. Chạy Unit Test
+
+Bước 6 – Chạy toàn bộ bài kiểm thử tự động:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests/ -v
+```
+
+Kết quả đã xác nhận trên môi trường phát triển:
+
+- 6 Unit Test PASS.
+- Có kiểm thử giá trị biên: số lượng bằng 0.
+- Có kiểm thử ngoại lệ: số lượng âm.
+
+### 3.6. Mở Dashboard Power BI
+
+Bước 7 – Mở Power BI Desktop.
+
+Mở file báo cáo cục bộ:
+
+powerbi/Mekong_Mobile_Sales_Dashboard.pbix
+
+Trong Power BI Desktop, chọn Home → Refresh để cập nhật dữ liệu từ các file CSV Warehouse.
+
+Dashboard có 3 trang:
+
+- Tổng Quan Doanh Thu.
+- Phân Tích Sản Phẩm.
+- Phân Tích Cửa Hàng.
+
+Dashboard gồm các KPI doanh thu, đơn hàng, sản phẩm bán, giá trị đơn hàng trung bình và tăng trưởng doanh thu theo tháng.
+
+Lưu ý:
+
+- Power BI hiện đọc các file CSV Warehouse, chưa kết nối trực tiếp với SQLite.
+- File PBIX chứa dữ liệu thực tế được giữ cục bộ, chưa đưa lên GitHub Public.
+- Người clone repository cần có Power BI Desktop và file PBIX được cung cấp qua kênh phù hợp để mở đúng Dashboard hiện tại.
+
+### 3.7. Kiểm tra kết quả
+
+Với bộ dữ liệu Mekong Mobile hiện tại, kết quả đã xác nhận:
+
+| Chỉ tiêu | Giá trị |
 |---|---:|
-| Dim_Date | 792 |
-| Dim_Product | 320 |
-| Dim_Store | 24 |
-| Fact_Sales | 35.697 |
+| Fact_Sales | 35.697 dòng |
+| Dim_Date | 792 dòng |
+| Dim_Product | 320 dòng |
+| Dim_Store | 24 dòng |
+| MATCH | 35.177 dòng |
+| MISMATCH | 520 dòng |
+| Fact thiếu date_key | 154 dòng |
+| Tổng doanh thu | 415.773.438.750 VND |
 
-Kết quả kiểm tra chất lượng:
-
-- 520 dòng doanh thu có chênh lệch (MISMATCH).
-- 154 dòng Fact_Sales thiếu date_key do 114 đơn hàng thiếu ngày.
-- Không có source_line_id trùng lặp.
-- Chạy lại ETL trên cùng bộ dữ liệu không làm tăng số dòng Fact_Sales.
-
-Các kết quả trên là số liệu kiểm thử của bộ dữ liệu hiện tại,
-không phải số liệu cố định cho mọi bộ dữ liệu.
-
+Các kết quả trên chỉ áp dụng cho bộ dữ liệu đã kiểm thử, không phải kết quả cố định của mọi bộ dữ liệu đầu vào.
 
 ## 4. Cấu trúc thư mục
 ```text

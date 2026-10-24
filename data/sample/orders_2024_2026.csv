@@ -1,0 +1,4 @@
+﻿order_id,ma_don,ma_cua_hang,ngay,ten_khach,so_dien_thoai,thanh_tien,nhan_vien,ghi_chu
+O001,DH001,CH001,2025-02-10,Khach Demo 1,0000000000,5500000,Nhan vien Demo,Du lieu gia lap
+O002,DH002,CH002,2025-03-15,Khach Demo 2,0000000000,8000000,Nhan vien Demo,Du lieu gia lap
+O003,DH003,CH001,2025-03-20,Khach Demo 3,0000000000,10000000,Nhan vien Demo,Du lieu gia lap

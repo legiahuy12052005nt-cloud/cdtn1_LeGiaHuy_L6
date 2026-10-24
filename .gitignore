@@ -1,3 +1,5 @@
+
+# Python
 .env
 .venv/
 venv/
@@ -6,22 +8,24 @@ __pycache__/
 .ipynb_checkpoints/
 *.pyc
 *.log
+
+# IDE
 .vscode/settings.json
 .idea/
+
+# Du lieu rieng tu va du lieu phat sinh
 data/raw/
 data/private/
 data/processed/
-*.pbix
-docs_backup_BT1/
-# Customer personal data
-data/raw/customers_raw.csv
-# Customer personal data
-data/raw/customers_raw.csv
-data/raw/orders_2024_2026.csv
-data/raw/*.csv
 data/rejected/
-data/processed/
-data/raw/*.csv
-data/rejected/
-data/processed/
 data/warehouse/
+
+# Power BI
+*.pbix
+
+# Backup
+docs_backup_BT1/
+
+# LUU Y:
+# Khong ignore data/sample/
+# Chi dua du lieu gia lap vao thu muc nay.

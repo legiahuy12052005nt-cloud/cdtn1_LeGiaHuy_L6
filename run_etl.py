@@ -85,5 +85,11 @@ def main():
     print("=== HOAN THANH ETL ===")
 
 
+
 if __name__ == "__main__":
     main()
+
+    # Nạp kết quả ETL vào SQLite Data Warehouse
+    from src.warehouse.build_sqlite_dwh import build_sqlite_dwh
+
+    build_sqlite_dwh()

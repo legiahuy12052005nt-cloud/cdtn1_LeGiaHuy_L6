@@ -1,0 +1,4 @@
+﻿product_id,product_code,product_name,thuong_hieu,nhom_san_pham,gia_niem_yet,warranty_months
+P001,SP001,Dien thoai Demo A,Brand A,Dien thoai,5000000,12
+P002,SP002,Tai nghe Demo B,Brand B,Phu kien,500000,6
+P003,SP003,May tinh bang Demo C,Brand C,May tinh bang,8000000,12
