@@ -315,6 +315,45 @@ các lệnh Python trong Terminal.
 
 Bộ kiểm thử tự động sẽ được bổ sung ở giai đoạn tiếp theo.
 
+### 5.5. Kiểm thử End-to-End (E2E) trên bản clone GitHub
+
+Mục tiêu: Kiểm tra khả năng chạy hệ thống sau khi clone repository
+từ GitHub vào một thư mục mới, không sử dụng dữ liệu thật.
+
+Quy trình kiểm thử:
+
+1. Clone repository từ GitHub vào thư mục độc lập.
+2. Sao chép 4 file CSV giả lập từ `data/sample/` vào `data/raw/`.
+3. Chạy `python run_etl.py`.
+4. Kiểm tra dữ liệu trong SQLite Data Warehouse.
+5. Chạy `python -m pytest tests/ -v`.
+
+Kết quả kiểm thử:
+
+| Hạng mục | Kết quả | Trạng thái |
+|---|---|---|
+| Clone repository GitHub | Thành công | PASS |
+| Đọc dữ liệu CSV giả lập | 4 file | PASS |
+| Chạy ETL | Tạo các bảng Warehouse | PASS |
+| Tạo SQLite Database | mekong_mobile.db | PASS |
+| Dim_Date | 3 dòng | PASS |
+| Dim_Product | 3 dòng | PASS |
+| Dim_Store | 2 dòng | PASS |
+| Fact_Sales | 4 dòng | PASS |
+| Kiểm tra khóa ngoại | Không có lỗi | PASS |
+| Unit Test | 6 bài kiểm thử PASS | PASS |
+
+Minh chứng:
+
+- `docs/evidence/e2e_github_clone_pytest.PNG`
+- `docs/evidence/e2e_github_clone_sqlite.PNG`
+
+Lưu ý: Bài kiểm thử này xác nhận luồng
+GitHub → CSV mẫu → ETL → SQLite → pytest.
+
+Dashboard Power BI sử dụng dữ liệu Warehouse CSV và được kiểm thử
+riêng; chưa bao gồm trong bài kiểm thử E2E tự động trên bản clone.
+
 
 
 ## 6. Trạng thái hiện tại
