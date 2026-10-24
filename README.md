@@ -356,59 +356,51 @@ riêng; chưa bao gồm trong bài kiểm thử E2E tự động trên bản clo
 
 
 
+
 ## 6. Trạng thái hiện tại
 
 ### 6.1. Các công việc đã hoàn thành
 
 - [x] Khởi tạo repository GitHub và cấu trúc dự án.
-- [x] Xây dựng tài liệu SRS và phân tích yêu cầu nghiệp vụ L6.
+- [x] Phân tích yêu cầu và xây dựng tài liệu SRS.
 - [x] Thiết kế Use Case, Architecture, Data Flow và Star Schema.
-- [x] Cập nhật tài liệu thiết kế theo phản hồi BT1.
-- [x] Xây dựng module Extract để đọc dữ liệu CSV.
-- [x] Xây dựng module Transform để chuẩn hóa dữ liệu bán hàng.
-- [x] Xây dựng module Quality để kiểm tra và ghi nhận dòng lỗi.
-- [x] Xây dựng module Load để lưu dữ liệu đã xử lý.
-- [x] Tích hợp quy trình ETL chạy bằng lệnh `python run_etl.py`.
-- [x] Xây dựng ba bảng Dimension: Dim_Date, Dim_Product, Dim_Store.
-- [x] Xây dựng bảng Fact_Sales theo Star Schema.
-- [x] Kiểm tra dữ liệu nguồn và đối soát doanh thu.
-- [x] Kiểm thử chạy lại ETL không phát sinh dòng Fact trùng lặp ở mức CSV.
+- [x] Xây dựng pipeline Extract, Transform, Quality và Load.
+- [x] Chuẩn hóa và đối soát dữ liệu doanh thu.
+- [x] Xây dựng Dim_Date, Dim_Product, Dim_Store và Fact_Sales.
+- [x] Tạo SQLite Data Warehouse với các ràng buộc dữ liệu.
+- [x] Kiểm tra khóa chính và khóa ngoại của Data Warehouse.
+- [x] Xây dựng Dashboard Power BI gồm 3 trang phân tích.
+- [x] Bổ sung đường doanh thu trung bình vào biểu đồ.
+- [x] Xây dựng chỉ số tăng trưởng doanh thu theo tháng.
+- [x] Xây dựng 6 Unit Test tự động.
+- [x] Kiểm thử E2E bằng dữ liệu mẫu trên bản clone GitHub.
+- [x] Bổ sung README hướng dẫn chạy dự án.
+- [x] Lưu minh chứng kiểm thử trong docs/evidence.
+- [x] Đáp ứng yêu cầu tối thiểu 8 Conventional Commits.
 
-### 6.2. Kết quả kiểm thử hiện tại
+### 6.2. Kết quả dữ liệu thực tế
 
 | Chỉ tiêu | Kết quả |
 |---|---:|
 | Tổng số đơn hàng | 26.000 |
-| Tổng số dòng chi tiết đơn hàng | 35.697 |
+| Tổng số dòng Fact_Sales | 35.697 |
 | Số sản phẩm | 320 |
 | Số cửa hàng | 24 |
 | Số ngày trong Dim_Date | 792 |
-| Số dòng Fact_Sales | 35.697 |
-| Dòng doanh thu khớp (MATCH) | 35.177 |
-| Dòng doanh thu chênh lệch (MISMATCH) | 520 |
-| Đơn hàng thiếu ngày | 114 |
-| Dòng Fact_Sales thiếu date_key | 154 |
-| Tổng doanh thu nguồn | 415.773.438.750 VNĐ |
-| Chênh lệch tổng doanh thu nguồn và Fact | 0 VNĐ |
+| Dòng doanh thu MATCH | 35.177 |
+| Dòng doanh thu MISMATCH | 520 |
+| Dòng Fact thiếu date_key | 154 |
+| Tổng doanh thu | 415.773.438.750 VND |
 
-### 6.3. Các công việc đang và sẽ thực hiện
+### 6.3. Công việc cần hoàn thiện
 
-- [ ] Hoàn thiện bộ kiểm thử tự động cho ETL và Data Warehouse.
-- [ ] Kiểm tra hiệu năng ETL theo ngưỡng NFR01.
-- [ ] Kiểm chứng đầy đủ yêu cầu ghi nhận lỗi theo NFR02.
-- [ ] Hoàn thiện chính sách xử lý dữ liệu thiếu và bất thường.
-- [ ] Xây dựng Dashboard phân tích doanh thu bằng Power BI.
-- [ ] Kiểm thử Dashboard và đối chiếu các chỉ tiêu với Data Warehouse.
-- [ ] Hoàn thiện tài liệu báo cáo và minh chứng kiểm thử.
+- [ ] Thực hiện Peer Review và ghi nhận nhận xét.
+- [ ] Rà soát toàn bộ tài liệu trước khi nộp.
+- [ ] Chuẩn bị báo cáo và bài thuyết trình đồ án.
 
-### 6.4. Lưu ý
+### 6.4. Lưu ý kỹ thuật
 
-Pipeline hiện tại xây dựng Data Warehouse dưới dạng các file CSV.
-
-Kết quả kiểm thử NFR03 mới xác nhận việc chạy lại ETL
-không làm tăng số dòng Fact_Sales khi ghi đè CSV.
-Chưa triển khai và kiểm thử cơ chế upsert trên cơ sở dữ liệu.
-
-Các dòng thiếu ngày vẫn được bảo toàn trong Fact_Sales
-và được ghi nhận để xử lý trong quá trình phân tích báo cáo.
-
+- Data Warehouse được lưu dưới dạng SQLite và các file CSV.
+- Dashboard Power BI hiện kết nối với CSV Warehouse, chưa đọc trực tiếp từ SQLite.
+- Dữ liệu khách hàng thật và file PBIX không được đưa vào các commit mới trên GitHub Public.
+- Bộ dữ liệu mẫu trong data/sample/ được sử dụng để kiểm thử và hướng dẫn chạy dự án.
