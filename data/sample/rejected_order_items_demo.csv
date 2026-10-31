@@ -1,0 +1,4 @@
+﻿order_id,product_id,quantity,unit_price,reported_sales_amount,reject_reason
+O002,P002,0,200000,0,Số lượng không hợp lệ
+O003,P003,-1,150000,-150000,Số lượng không hợp lệ; Thành tiền không hợp lệ
+O004,P004,3,-50000,300000,Đơn giá không hợp lệ

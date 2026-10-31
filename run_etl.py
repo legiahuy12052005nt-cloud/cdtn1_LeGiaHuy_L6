@@ -5,6 +5,15 @@ from src.transform.transform_sales import (
     reconcile_sales,
 )
 from src.quality.validate_sales import validate_order_items
+
+from src.quality.quality_checks import (
+    check_order_id,
+    check_product_id,
+    check_quantity,
+    check_unit_price,
+    check_reported_sales_amount,
+)
+
 from src.quality.reject_logger import save_rejected_rows
 from src.load.load_sales import load_clean_sales
 from src.load.load_warehouse import save_warehouse_table
@@ -24,11 +33,32 @@ def main():
     products = extract_csv("data/raw/products.csv")
     stores = extract_csv("data/raw/stores.csv")
 
+    
     # BUOC 2: TRANSFORM
     normalized = normalize_order_items(items)
 
-    # BUOC 3: QUALITY
+    # BUOC 3: QUALITY - BAO CAO 5 QUY TAC
+    quality_results = {
+        "order_id": check_order_id(normalized),
+        "product_id": check_product_id(normalized),
+        "quantity": check_quantity(normalized),
+        "unit_price": check_unit_price(normalized),
+        "reported_sales_amount": check_reported_sales_amount(normalized),
+    }
+
+    print("\n=== BAO CAO CHAT LUONG DU LIEU ===")
+    print(f"Tong so dong kiem tra: {len(normalized)}")
+
+    for check_name, result in quality_results.items():
+        print(
+            f"{check_name}: "
+            f"{result['error_count']} dong loi "
+            f"({result['error_rate']:.2f}%)"
+        )
+
+    # GIU NGUYEN CO CHE PHAN LOAI VALID / REJECT
     valid, rejected = validate_order_items(normalized)
+
 
     # BUOC 4: GHI ERROR LOG
     save_rejected_rows(rejected)
@@ -93,3 +123,5 @@ if __name__ == "__main__":
     from src.warehouse.build_sqlite_dwh import build_sqlite_dwh
 
     build_sqlite_dwh()
+    
+    
