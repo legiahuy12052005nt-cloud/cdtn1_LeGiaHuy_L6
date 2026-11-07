@@ -25,6 +25,9 @@ from src.warehouse.build_fact_sales import build_fact_sales
 
 
 def main():
+    import sys
+    sys.stdout.reconfigure(errors="backslashreplace")
+
     print("=== BAT DAU QUY TRINH ETL ===")
 
     # BUOC 1: EXTRACT
