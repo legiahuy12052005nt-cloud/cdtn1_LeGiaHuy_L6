@@ -46,11 +46,18 @@ def validate_order_items(df: pd.DataFrame):
     for position in range(len(data)):
         row = data.iloc[position]
 
-        if pd.isna(row["order_id"]):
+        if pd.isna(row["order_id"]) or (
+            isinstance(row["order_id"], str)
+            and not row["order_id"].strip()
+        ):
             reasons[position].append("Thiếu order_id")
 
-        if pd.isna(row["product_id"]):
+        if pd.isna(row["product_id"]) or (
+            isinstance(row["product_id"], str)
+            and not row["product_id"].strip()
+        ):
             reasons[position].append("Thiếu product_id")
+
 
         quantity = numeric_values["quantity"].iloc[position]
         unit_price = numeric_values["unit_price"].iloc[position]
