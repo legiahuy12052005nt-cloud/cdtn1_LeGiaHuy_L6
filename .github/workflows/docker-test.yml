@@ -1,0 +1,79 @@
+
+name: BT3 Docker Deployment Test
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - Dockerfile
+      - docker-compose.yml
+      - requirements.txt
+      - run_etl.py
+      - src/**
+      - data/sample/**
+      - .github/workflows/docker-test.yml
+
+jobs:
+  docker-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build and run ETL with Docker
+        run: docker compose run --build --rm pipeline
+
+      - name: Verify SQLite Data Warehouse
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import sqlite3
+          from pathlib import Path
+
+          db_path = Path("data/warehouse/mekong_mobile.db")
+          assert db_path.is_file(), "SQLite database was not created"
+
+          expected = {
+              "dim_date": 3,
+              "dim_product": 3,
+              "dim_store": 2,
+              "fact_sales": 4,
+          }
+
+          with sqlite3.connect(db_path) as conn:
+              for table, count in expected.items():
+                  actual = conn.execute(
+                      f"SELECT COUNT(*) FROM {table}"
+                  ).fetchone()[0]
+
+                  assert actual == count, (
+                      f"{table}: expected {count}, got {actual}"
+                  )
+
+                  print(f"PASS: {table} = {actual} rows")
+
+          print("PASS: SQLite Warehouse verified")
+          PY
+
+      - name: Test ETL rerun
+        run: docker compose run --rm pipeline
+
+      - name: Verify no duplicate data after rerun
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import sqlite3
+
+          with sqlite3.connect(
+              "data/warehouse/mekong_mobile.db"
+          ) as conn:
+              count = conn.execute(
+                  "SELECT COUNT(*) FROM fact_sales"
+              ).fetchone()[0]
+
+          assert count == 4, f"Expected 4 rows, got {count}"
+          print("PASS: Rerun did not duplicate sales records")
+          PY
