@@ -9,7 +9,7 @@
 
 ## 1. Quản lý thông tin bí mật (Secrets Management)
 
-**Trạng thái:** ĐÃ LÀM MỘT PHẦN
+**Trạng thái:** ĐÃ LÀM (kiểm tra cơ bản)
 
 - Sử dụng `.gitignore` và `.dockerignore` để loại trừ file `.env` khỏi các thao tác đóng gói thông thường.
 - Sử dụng `.env.example` để mô tả cấu hình mà không chứa mật khẩu.
@@ -17,6 +17,16 @@
 - Chưa thực hiện kiểm tra toàn bộ lịch sử Git để xác nhận không có secrets từng được commit.
 
 **Minh chứng:** `.gitignore`, `.dockerignore`, `.env.example`.
+### Kết quả kiểm tra thực tế
+
+- Đã xác nhận `.gitignore` loại trừ `.env`, `.venv/`, `data/raw/`, `data/private/` và các thư mục dữ liệu phát sinh.
+- Lệnh `git ls-files --error-unmatch .env` xác nhận `.env` không được Git theo dõi.
+- Lệnh `git log --all --oneline -- .env` không tìm thấy commit chứa đường dẫn `.env`.
+- Kiểm tra nội dung hiện tại bằng `git grep` không phát hiện secrets trong các từ khóa đã tìm kiếm.
+- Kiểm tra lịch sử Git bằng `git log -G` phát hiện một commit khớp từ khóa `password`, nhưng đã xác minh đó chỉ là tiêu đề tài liệu Security Checklist.
+- Chưa thực hiện quét bằng công cụ chuyên dụng như Gitleaks hoặc TruffleHog.
+
+**Kết luận:** Chưa phát hiện secrets qua các bước kiểm tra cơ bản. Kết quả không thay thế cho kiểm toán bảo mật toàn diện.
 
 ## 2. Kiểm tra dữ liệu đầu vào (Input Validation)
 
@@ -73,14 +83,37 @@
 
 ## 7. Quản lý thư viện và kiểm tra lỗ hổng (Dependency Security)
 
-**Trạng thái:** ĐÃ LÀM MỘT PHẦN
+**Trạng thái:** ĐÃ LÀM (kiểm tra cơ bản)
 
-- Các thư viện Python chính được cố định phiên bản trong `requirements.txt`.
-- Dockerfile sử dụng phiên bản Python cụ thể `3.10.11-slim`.
-- Chưa thực hiện quét lỗ hổng thư viện bằng công cụ bảo mật.
-- Cần kiểm tra dependency vulnerabilities trước khi triển khai production.
+### Biện pháp đã thực hiện
 
-**Minh chứng:** `requirements.txt`, `Dockerfile`.
+- Cố định phiên bản thư viện Python trong `requirements.txt`:
+  - `pandas==2.3.3`
+  - `pytest==9.2.0`
+- Dockerfile sử dụng Python `3.10.11-slim`.
+- Sử dụng công cụ `pip-audit` để kiểm tra các lỗ hổng bảo mật đã được công bố.
+
+### Kết quả kiểm tra thực tế
+
+**Lệnh thực hiện:**
+
+```bat
+.venv\Scripts\python.exe -m pip_audit -r requirements.txt
+```
+
+**Kết quả:** PASS – Không phát hiện lỗ hổng bảo mật đã biết tại thời điểm kiểm tra.
+
+**Minh chứng:**
+
+- `requirements.txt`
+- `Dockerfile`
+- Kết quả chạy `pip-audit` trên Terminal.
+
+### Giới hạn
+
+- Kết quả quét chỉ phản ánh thông tin lỗ hổng đã biết tại thời điểm thực hiện.
+- Cần quét lại dependency định kỳ khi triển khai hoặc nâng cấp hệ thống.
+- Chưa thực hiện kiểm tra bảo mật toàn bộ Docker image.
 
 ## Kết luận
 
