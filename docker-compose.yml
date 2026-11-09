@@ -1,0 +1,12 @@
+
+services:
+  pipeline:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mekong-mobile-etl:1.0
+    volumes:
+      - ./data/warehouse:/app/data/warehouse
+      - ./data/processed:/app/data/processed
+      - ./data/rejected:/app/data/rejected
+    restart: "no"

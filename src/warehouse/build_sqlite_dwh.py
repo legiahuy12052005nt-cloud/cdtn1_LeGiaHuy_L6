@@ -10,10 +10,10 @@ DATABASE_PATH = WAREHOUSE_DIR / "mekong_mobile.db"
 SCHEMA_PATH = Path("src/warehouse/schema.sql")
 
 TABLES = [
-    ("dim_date", "dim_date.csv"),
-    ("dim_product", "dim_product.csv"),
-    ("dim_store", "dim_store.csv"),
-    ("fact_sales", "fact_sales.csv"),
+    ("dim_date", "Dim_Date.csv"),
+    ("dim_product", "Dim_Product.csv"),
+    ("dim_store", "Dim_Store.csv"),
+    ("fact_sales", "Fact_Sales.csv"),
 ]
 
 
