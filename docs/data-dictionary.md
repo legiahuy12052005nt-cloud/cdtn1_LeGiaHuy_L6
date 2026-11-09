@@ -23,7 +23,11 @@ Kho dữ liệu gồm 4 bảng:
 
 Các kiểu dữ liệu trong tài liệu là **kiểu SQL đề xuất cho kho dữ liệu mục tiêu**.
 
-Ở giai đoạn hiện tại, hệ thống ETL xuất dữ liệu ra CSV. Các ràng buộc PK, FK và UNIQUE được kiểm tra bằng Python, chưa được thực thi trực tiếp trong hệ quản trị cơ sở dữ liệu.
+Ở phiên bản BT3, hệ thống ETL xuất dữ liệu ra các file CSV và đồng thời nạp vào SQLite Data Warehouse tại data/warehouse/mekong_mobile.db.
+
+Các ràng buộc PRIMARY KEY, FOREIGN KEY, UNIQUE, NOT NULL và CHECK được khai báo trong src/warehouse/schema.sql. Chương trình bật PRAGMA foreign_keys = ON khi tạo và nạp dữ liệu vào SQLite.
+
+Các kiểu dữ liệu SQL ở những mục bên dưới là thiết kế đề xuất ban đầu. Kiểu dữ liệu và ràng buộc SQLite được triển khai thực tế được trình bày tại Mục 10.
 
 ### 1.2. Lưu ý về kiểu dữ liệu thực tế
 
@@ -326,8 +330,13 @@ Kết quả:
 - Các bản ghi thiếu ngày được giữ lại đúng chính sách.
 - Các trường hợp chênh lệch doanh thu được phân loại và bảo toàn.
 
-Kết quả được kiểm tra bằng Python trên các file CSV đầu ra. Các ràng buộc PK, FK và UNIQUE chưa được thực thi trực tiếp trong cơ sở dữ liệu.
+Kết quả được kiểm tra bằng Python trên các file CSV đầu ra. Kết quả kiểm thử tính toàn vẹn dữ liệu ban đầu được thực hiện bằng Python trên các file CSV đầu ra của ETL.
 
+Trong phiên bản BT3, hệ thống đã bổ sung SQLite Data Warehouse. Các ràng buộc PRIMARY KEY, FOREIGN KEY, UNIQUE, NOT NULL và CHECK được khai báo trong `src/warehouse/schema.sql`.
+
+Chương trình `src/warehouse/build_sqlite_dwh.py` sử dụng `PRAGMA foreign_keys = ON` và `PRAGMA foreign_key_check` để kiểm tra quan hệ khóa ngoại trong quá trình nạp dữ liệu.
+
+Các kết quả kiểm thử CSV trước đó được giữ lại làm minh chứng cho quá trình phát triển hệ thống.
 ### 8.6. Minh chứng kiểm thử
 
 **Mã nguồn kiểm thử:** `src/quality/check_warehouse.py`
@@ -342,12 +351,19 @@ Kết quả được kiểm tra bằng Python trên các file CSV đầu ra. Cá
 
 ### 9.1. Giới hạn hiện tại
 
-- Kho dữ liệu đang được lưu dưới dạng các file CSV.
-- Chưa triển khai bảng vật lý và ràng buộc dữ liệu trong hệ quản trị cơ sở dữ liệu.
-- Kiểu dữ liệu SQL trong Data Dictionary là thiết kế đề xuất.
-- Các khóa thay thế được tạo trong ETL dựa trên dữ liệu hiện tại.
-- Chưa có cơ chế cập nhật tăng dần và quản lý lịch sử thay đổi Dimension.
-- Kiểm thử hiện được thực hiện trên dữ liệu CSV đầu ra.
+- Kho dữ liệu đã được lưu dưới dạng CSV và SQLite Data Warehouse, tuy nhiên chưa triển khai trên hệ quản trị cơ sở dữ liệu máy chủ như PostgreSQL hoặc SQL Server.
+
+- SQLite đã có các bảng vật lý và ràng buộc PRIMARY KEY, FOREIGN KEY, UNIQUE, NOT NULL và CHECK theo src/warehouse/schema.sql.
+
+- Các kiểu dữ liệu SQL ở những mục trước phản ánh thiết kế đề xuất ban đầu; kiểu dữ liệu SQLite thực tế được mô tả tại Mục 10.
+
+- Hệ thống hiện xử lý dữ liệu theo lô (batch ETL), chưa hỗ trợ cập nhật tăng dần (incremental loading).
+
+- Chưa triển khai cơ chế quản lý lịch sử thay đổi Dimension (Slowly Changing Dimensions).
+
+- Chưa kiểm thử việc đóng gói và chạy ETL thực tế trong Docker.
+
+- Chưa có cơ chế tự động lập lịch chạy ETL trên môi trường production.
 
 ### 9.2. Hướng hoàn thiện
 
@@ -359,3 +375,67 @@ Kết quả được kiểm tra bằng Python trên các file CSV đầu ra. Cá
 - Tiếp tục đối chiếu kết quả Dashboard với dữ liệu Fact_Sales.
 
 Tài liệu Data Dictionary sẽ được cập nhật khi cấu trúc hoặc quy tắc dữ liệu có thay đổi.
+
+---
+
+## 10. Cập nhật Data Dictionary cho SQLite Warehouse (BT3)
+
+### 10.1. Môi trường lưu trữ thực tế
+
+Trong phiên bản BT3, ngoài các file CSV, hệ thống đã bổ sung SQLite Data Warehouse.
+
+- Database: `data/warehouse/mekong_mobile.db`
+- Schema: `src/warehouse/schema.sql`
+- Chương trình tạo database: `src/warehouse/build_sqlite_dwh.py`
+- Cấu trúc: Star Schema gồm 1 Fact và 3 Dimension.
+
+Các kiểu dữ liệu trong SQLite là kiểu triển khai thực tế, khác với một số kiểu SQL đề xuất ở các mục trước.
+
+### 10.2. Kiểu dữ liệu và ràng buộc SQLite
+
+| Bảng | Cột | Kiểu SQLite | Ràng buộc |
+|---|---|---|---|
+| dim_date | date_key | INTEGER | PRIMARY KEY |
+| dim_date | full_date | TEXT | NOT NULL |
+| dim_date | day, month, quarter, year | INTEGER | NOT NULL |
+| dim_product | product_key | INTEGER | PRIMARY KEY |
+| dim_product | product_id | TEXT | NOT NULL, UNIQUE |
+| dim_product | product_name, category, brand | TEXT | Cho phép NULL |
+| dim_store | store_key | INTEGER | PRIMARY KEY |
+| dim_store | store_code | TEXT | NOT NULL, UNIQUE |
+| dim_store | store_name, city, district | TEXT | Cho phép NULL |
+| fact_sales | sales_key | INTEGER | PRIMARY KEY |
+| fact_sales | source_line_id | TEXT | NOT NULL, UNIQUE |
+| fact_sales | order_id | TEXT | NOT NULL |
+| fact_sales | date_key | INTEGER | FOREIGN KEY, cho phép NULL |
+| fact_sales | product_key | INTEGER | NOT NULL, FOREIGN KEY |
+| fact_sales | store_key | INTEGER | NOT NULL, FOREIGN KEY |
+| fact_sales | quantity | INTEGER | NOT NULL, CHECK > 0 |
+| fact_sales | unit_price | INTEGER | NOT NULL, CHECK >= 0 |
+| fact_sales | reported_sales_amount | INTEGER | NOT NULL, CHECK >= 0 |
+| fact_sales | calculated_sales_amount | INTEGER | NOT NULL |
+| fact_sales | difference_amount | INTEGER | NOT NULL |
+| fact_sales | reconciliation_status | TEXT | NOT NULL, CHECK MATCH/MISMATCH |
+
+### 10.3. Phân loại và bảo mật dữ liệu
+
+| Nhóm dữ liệu | Ví dụ | Phân loại | Biện pháp bảo vệ |
+|---|---|---|---|
+| Mã định danh giao dịch | order_id, source_line_id | Nội bộ | Giới hạn quyền truy cập file dữ liệu |
+| Thông tin sản phẩm | product_id, product_name, brand | Nội bộ | Chỉ sử dụng trong phạm vi phân tích |
+| Thông tin cửa hàng | store_code, store_name, city, district | Nội bộ | Kiểm soát quyền truy cập dữ liệu |
+| Doanh thu và đơn giá | unit_price, reported_sales_amount, calculated_sales_amount | Nhạy cảm về kinh doanh | Không công khai dữ liệu thực tế |
+| Thời gian và khóa kỹ thuật | date_key, sales_key, product_key, store_key | Nội bộ | Duy trì tính toàn vẹn dữ liệu |
+| Trạng thái đối soát | reconciliation_status, difference_amount | Nội bộ | Bảo vệ tính chính xác của báo cáo |
+
+Dữ liệu mẫu được sử dụng cho mục đích minh họa và kiểm thử triển khai.
+
+### 10.4. Nguyên tắc triển khai và kiểm thử
+
+- SQLite thực thi các ràng buộc PRIMARY KEY, FOREIGN KEY, UNIQUE, NOT NULL và CHECK theo schema.
+- Chương trình tạo database bật `PRAGMA foreign_keys = ON`.
+- Database mới được tạo ở file tạm và chỉ thay thế database cũ sau khi nạp thành công.
+- Các file CSV Warehouse được tạo lại khi chạy ETL, không nối thêm dữ liệu cũ.
+- Chưa triển khai cơ chế mã hóa SQLite ở trạng thái lưu trữ.
+- Cần kiểm thử Docker thực tế trước khi phát hành phiên bản v1.0.
+
