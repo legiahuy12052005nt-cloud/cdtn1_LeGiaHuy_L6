@@ -102,4 +102,20 @@ The Power BI dashboard template is available at:
 
 Power BI Desktop runs separately on Windows. It is not included in the Docker container.
 
-**Deployment status:** Docker configuration has been prepared, but container execution has not yet been verified. The instructions above must be validated on a Docker-enabled environment before the final v1.0 release.
+**Deployment status: VERIFIED**
+
+The ETL pipeline was successfully built and executed using Docker Compose on a clean Linux environment provided by GitHub Actions.
+
+The following checks passed:
+
+- Docker image build and ETL execution.
+- SQLite Data Warehouse generation.
+- Verification of all four Warehouse tables.
+- ETL rerun with the same sample dataset.
+- Verification that rerunning the pipeline does not duplicate sales records.
+
+**Evidence:** `docs/evidence/docker_pass_BT3.PNG`
+
+**CI workflow:** `.github/workflows/docker-test.yml`
+
+This verification was performed on GitHub Actions. Docker Desktop execution on the local Windows development machine was not tested.

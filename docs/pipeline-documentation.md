@@ -172,7 +172,7 @@ The Docker demonstration uses bundled sample data. Processing a different datase
 - Slowly Changing Dimensions are not supported.
 - SQLite does not provide built-in file encryption in this implementation.
 - The Power BI dashboard runs separately from the Docker container.
-- Docker container execution has not yet been verified in the current development environment.
+- Docker execution was successfully verified on GitHub Actions using an Ubuntu Linux runner. Local Docker Desktop execution on Windows was not tested.
 
 ## 7. Verification
 
@@ -200,4 +200,10 @@ For the bundled sample data, expected table counts are:
 
 The existing automated regression test suite contains 14 tests, which passed during BT3 preparation.
 
-The Docker deployment remains pending real execution verification before the final release.
+Docker deployment verification: PASSED on GitHub Actions.
+
+The workflow successfully built the Docker image, executed the ETL pipeline, verified the SQLite Data Warehouse, and confirmed that rerunning the pipeline did not duplicate sales records.
+
+Evidence: `docs/evidence/docker_pass_BT3.PNG`
+
+Workflow: `.github/workflows/docker-test.yml`
