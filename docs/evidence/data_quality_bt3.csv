@@ -1,0 +1,28 @@
+﻿file,column,total_rows,present_rows,missing_rows,completeness_pct,completeness_threshold_pct,completeness_status,valid_rows,invalid_rows,validity_pct,validity_threshold_pct,validity_status,consistency_rule,consistency_checked_rows,consistency_failed_rows,consistency_pct,consistency_threshold_pct,consistency_status
+orders_2024_2026.csv,order_id,26000,26000,0,100.0,99.0,PASS,26000,0,100.0,99.0,PASS,order_id phải có giá trị duy nhất,26000,0,100.0,100.0,PASS
+orders_2024_2026.csv,ma_don,26000,26000,0,100.0,99.0,PASS,26000,0,100.0,99.0,PASS,N/A - Chưa xác định quy tắc đối chiếu,0,0,,,N/A
+orders_2024_2026.csv,ma_cua_hang,26000,26000,0,100.0,99.0,PASS,26000,0,100.0,99.0,PASS,ma_cua_hang tham chiếu store_code,26000,0,100.0,99.0,PASS
+orders_2024_2026.csv,ngay,26000,25886,114,99.56,99.0,PASS,25886,0,100.0,99.0,PASS,N/A - Chưa xác định quy tắc đối chiếu,0,0,,,N/A
+orders_2024_2026.csv,ten_khach,26000,26000,0,100.0,99.0,PASS,26000,0,100.0,99.0,PASS,N/A - Chưa xác định quy tắc đối chiếu,0,0,,,N/A
+orders_2024_2026.csv,so_dien_thoai,26000,24512,1488,94.28,90.0,PASS,24512,0,100.0,99.0,PASS,N/A - Chưa xác định quy tắc đối chiếu,0,0,,,N/A
+orders_2024_2026.csv,thanh_tien,26000,25721,279,98.93,98.0,PASS,25508,213,99.17,99.0,PASS,N/A - Chưa xác định quy tắc đối chiếu,0,0,,,N/A
+orders_2024_2026.csv,nhan_vien,26000,24989,1011,96.11,99.0,FAIL,24989,0,100.0,99.0,PASS,N/A - Chưa xác định quy tắc đối chiếu,0,0,,,N/A
+orders_2024_2026.csv,ghi_chu,26000,13039,12961,50.15,0.0,PASS,13039,0,100.0,99.0,PASS,N/A - Chưa xác định quy tắc đối chiếu,0,0,,,N/A
+order_items.csv,order_id,35697,35697,0,100.0,99.0,PASS,35697,0,100.0,99.0,PASS,order_id tham chiếu order_id,35697,0,100.0,99.0,PASS
+order_items.csv,product_id,35697,35697,0,100.0,99.0,PASS,35697,0,100.0,99.0,PASS,product_id tham chiếu product_id,35697,0,100.0,99.0,PASS
+order_items.csv,so_luong,35697,35697,0,100.0,99.0,PASS,35697,0,100.0,99.0,PASS,N/A - Chưa xác định quy tắc đối chiếu,0,0,,,N/A
+order_items.csv,don_gia,35697,35697,0,100.0,99.0,PASS,35697,0,100.0,99.0,PASS,N/A - Chưa xác định quy tắc đối chiếu,0,0,,,N/A
+order_items.csv,thanh_tien,35697,35697,0,100.0,99.0,PASS,35697,0,100.0,99.0,PASS,thanh_tien = so_luong * don_gia,35697,520,98.54,99.0,FAIL
+products.csv,product_id,320,320,0,100.0,99.0,PASS,320,0,100.0,99.0,PASS,product_id phải có giá trị duy nhất,320,0,100.0,100.0,PASS
+products.csv,product_code,320,320,0,100.0,99.0,PASS,320,0,100.0,99.0,PASS,product_code phải có giá trị duy nhất,320,0,100.0,100.0,PASS
+products.csv,product_name,320,320,0,100.0,99.0,PASS,320,0,100.0,99.0,PASS,N/A - Chưa xác định quy tắc đối chiếu,0,0,,,N/A
+products.csv,thuong_hieu,320,320,0,100.0,99.0,PASS,320,0,100.0,99.0,PASS,N/A - Chưa xác định quy tắc đối chiếu,0,0,,,N/A
+products.csv,nhom_san_pham,320,320,0,100.0,99.0,PASS,320,0,100.0,99.0,PASS,N/A - Chưa xác định quy tắc đối chiếu,0,0,,,N/A
+products.csv,gia_niem_yet,320,320,0,100.0,99.0,PASS,320,0,100.0,99.0,PASS,N/A - Chưa xác định quy tắc đối chiếu,0,0,,,N/A
+products.csv,warranty_months,320,320,0,100.0,99.0,PASS,320,0,100.0,99.0,PASS,N/A - Chưa xác định quy tắc đối chiếu,0,0,,,N/A
+stores.csv,store_id,24,24,0,100.0,99.0,PASS,24,0,100.0,99.0,PASS,store_id phải có giá trị duy nhất,24,0,100.0,100.0,PASS
+stores.csv,store_code,24,24,0,100.0,99.0,PASS,24,0,100.0,99.0,PASS,store_code phải có giá trị duy nhất,24,0,100.0,100.0,PASS
+stores.csv,store_name,24,24,0,100.0,99.0,PASS,24,0,100.0,99.0,PASS,N/A - Chưa xác định quy tắc đối chiếu,0,0,,,N/A
+stores.csv,thanh_pho,24,24,0,100.0,99.0,PASS,24,0,100.0,99.0,PASS,N/A - Chưa xác định quy tắc đối chiếu,0,0,,,N/A
+stores.csv,quan_huyen,24,24,0,100.0,99.0,PASS,24,0,100.0,99.0,PASS,N/A - Chưa xác định quy tắc đối chiếu,0,0,,,N/A
+stores.csv,ngay_khai_truong,24,24,0,100.0,99.0,PASS,24,0,100.0,99.0,PASS,N/A - Chưa xác định quy tắc đối chiếu,0,0,,,N/A

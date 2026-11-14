@@ -6,12 +6,16 @@ on:
   push:
     branches:
       - main
+
     paths:
       - Dockerfile
       - docker-compose.yml
+      - .dockerignore
       - requirements.txt
       - run_etl.py
       - src/**
+      - tests/**
+      - scripts/**
       - data/sample/**
       - .github/workflows/docker-test.yml
 
@@ -77,3 +81,7 @@ jobs:
           assert count == 4, f"Expected 4 rows, got {count}"
           print("PASS: Rerun did not duplicate sales records")
           PY
+
+      - name: Chay bo kiem thu pytest trong Docker
+        run: |
+          docker compose run --rm pipeline python -m pytest tests/ -v

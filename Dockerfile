@@ -10,8 +10,14 @@ COPY requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
+
+# Sao chép chương trình ETL và mã nguồn xử lý dữ liệu.
 COPY run_etl.py .
 COPY src/ ./src/
+
+# Sao chép bộ kiểm thử để có thể chạy pytest trong Docker.
+COPY tests/ ./tests/
+
 COPY data/sample/ ./data/sample/
 
 RUN mkdir -p data/raw data/processed data/rejected data/warehouse
