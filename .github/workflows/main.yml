@@ -1,0 +1,46 @@
+
+name: Verify Clean Clone v1.0
+
+on:
+  workflow_dispatch:
+
+jobs:
+  verify-tag:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clone sach tag v1.0
+        run: |
+          git clone --branch v1.0 https://github.com/legiahuy12052005nt-cloud/cdtn1_LeGiaHuy_L6.git project-v1
+          cd project-v1
+          git log -1 --oneline
+          test "$(git rev-parse --short HEAD)" = "61e34ba"
+
+      - name: Docker build va chay ETL
+        working-directory: project-v1
+        run: docker compose run --build --rm pipeline
+
+      - name: Kiem tra SQLite Warehouse
+        working-directory: project-v1
+        run: |
+          python3 - <<'PY'
+          import sqlite3
+
+          expected = {
+              "dim_date": 3,
+              "dim_product": 3,
+              "dim_store": 2,
+              "fact_sales": 4
+          }
+
+          with sqlite3.connect("data/warehouse/mekong_mobile.db") as conn:
+              for table, count in expected.items():
+                  actual = conn.execute(
+                      f"SELECT COUNT(*) FROM {table}"
+                  ).fetchone()[0]
+
+                  assert actual == count, f"{table}: {actual}"
+                  print(f"PASS: {table} = {actual}")
+
+          print("PASS: Clean clone v1.0")
+          PY
