@@ -1,441 +1,685 @@
+# DATA DICTIONARY – MEKONG MOBILE DATA WAREHOUSE
 
-# DATA DICTIONARY – MEKONG MOBILE
-
-## 1. Mục đích
-
-Tài liệu mô tả cấu trúc dữ liệu của kho dữ liệu bán hàng Mekong Mobile theo mô hình Star Schema, nhằm đảm bảo sự thống nhất giữa thiết kế dữ liệu, quy trình ETL và kết quả kiểm thử.
-
-Kho dữ liệu gồm 4 bảng:
-
-- **Fact_Sales:** Lưu thông tin chi tiết bán hàng và kết quả đối soát doanh thu.
-- **Dim_Date:** Lưu thông tin ngày phục vụ phân tích theo thời gian.
-- **Dim_Product:** Lưu thông tin sản phẩm.
-- **Dim_Store:** Lưu thông tin cửa hàng.
-
-### 1.1. Quy ước
-
-- **PK (Primary Key):** Khóa chính, dùng để định danh duy nhất một bản ghi.
-- **FK (Foreign Key):** Khóa ngoại, dùng để liên kết giữa các bảng.
-- **UNIQUE:** Giá trị không được trùng lặp.
-- **NULL:** Giá trị có thể bị thiếu.
-- **Surrogate Key:** Khóa thay thế được tạo trong quá trình ETL.
-- **Grain:** Mức độ chi tiết của một bản ghi trong bảng Fact.
-
-Các kiểu dữ liệu trong tài liệu là **kiểu SQL đề xuất cho kho dữ liệu mục tiêu**.
-
-Ở phiên bản BT3, hệ thống ETL xuất dữ liệu ra các file CSV và đồng thời nạp vào SQLite Data Warehouse tại data/warehouse/mekong_mobile.db.
-
-Các ràng buộc PRIMARY KEY, FOREIGN KEY, UNIQUE, NOT NULL và CHECK được khai báo trong src/warehouse/schema.sql. Chương trình bật PRAGMA foreign_keys = ON khi tạo và nạp dữ liệu vào SQLite.
-
-Các kiểu dữ liệu SQL ở những mục bên dưới là thiết kế đề xuất ban đầu. Kiểu dữ liệu và ràng buộc SQLite được triển khai thực tế được trình bày tại Mục 10.
-
-### 1.2. Lưu ý về kiểu dữ liệu thực tế
-
-Khi đọc CSV bằng pandas, kiểu dữ liệu có thể khác với kiểu SQL đề xuất.
-
-| Cột | Kiểu pandas khi đọc CSV | Kiểu SQL đề xuất | Giải thích |
-|---|---|---|---|
-| Fact_Sales.date_key | float64 | INTEGER NULL | pandas suy luận kiểu float64 do cột có giá trị thiếu |
-| Fact_Sales.order_id | int64 | VARCHAR(100) | Mã định danh được đề xuất lưu dạng chuỗi trong SQL |
-| Dim_Product.product_id | int64 | VARCHAR(100) | Mã sản phẩm được đề xuất lưu dạng chuỗi trong SQL |
-| Dim_Date.full_date | object | DATE | Ngày được đọc từ CSV dưới dạng chuỗi và cần chuyển đổi khi nạp vào database |
-| Các cột tiền tệ | int64 | DECIMAL(18,2) | Dữ liệu hiện tại là số nguyên; thiết kế SQL sử dụng kiểu số thập phân |
-
-**Lưu ý:** Kiểu `VARCHAR(100)` cho mã định danh là lựa chọn thiết kế SQL, không phải kiểu dữ liệu pandas hiện tại. Khi triển khai database cần chuyển đổi dữ liệu và thống nhất với ERD.
+**Project:** Sales Data Warehouse and Revenue Analysis Dashboard for Mekong Mobile  
+**Student:** Le Gia Huy  
+**Student ID:** 2374802010175  
+**Track:** DA – L6  
+**Release:** v1.0  
+**Repository:** https://github.com/legiahuy12052005nt-cloud/cdtn1_LeGiaHuy_L6
 
 ---
 
-## 2. Fact_Sales
+## 1. Introduction
 
-### 2.1. Mục đích
+### 1.1. Purpose
 
-Fact_Sales lưu dữ liệu bán hàng ở mức chi tiết, đồng thời hỗ trợ kiểm tra chênh lệch giữa doanh thu ghi nhận từ nguồn và doanh thu được tính toán.
+This document describes the data structure of the Mekong Mobile Sales Data Warehouse.
 
-### 2.2. Grain
+It provides the definitions, data types, constraints, valid values, nullability, sensitivity classification, and security handling of the analytical tables.
 
-Mỗi bản ghi trong Fact_Sales tương ứng với **một dòng chi tiết sản phẩm trong một hóa đơn nguồn**, lấy từ `order_items.csv`.
+The Data Dictionary supports data consistency between the ETL pipeline, SQLite database, and Power BI Dashboard.
 
-Các dòng trùng hoàn toàn trong dữ liệu nguồn vẫn được giữ lại nhằm bảo toàn số dòng và giá trị nguồn.
+### 1.2. Data Warehouse Overview
 
-Mỗi dòng được phân biệt bằng `source_line_id`, được tạo từ vị trí dòng vật lý trong file nguồn.
+The Data Warehouse follows a Star Schema with one Fact table and three Dimension tables.
 
-### 2.3. Data Dictionary
+| Table | Purpose | Number of Columns |
+|---|---|---:|
+| `fact_sales` | Stores sales details and reconciliation results | 12 |
+| `dim_date` | Stores calendar information | 6 |
+| `dim_product` | Stores product information | 5 |
+| `dim_store` | Stores store information | 5 |
+| **Total** | **4 analytical tables** | **28** |
 
-| Cột | Kiểu dữ liệu SQL đề xuất | Khóa / Ràng buộc | Mô tả |
-|---|---|---|---|
-| sales_key | BIGINT | PK | Khóa thay thế của bản ghi bán hàng, được tạo trong ETL |
-| source_line_id | VARCHAR(100) | UNIQUE | Mã định danh dòng dữ liệu nguồn |
-| order_id | VARCHAR(100) | | Mã hóa đơn nguồn |
-| date_key | INTEGER | FK, NULL | Khóa liên kết Dim_Date, có thể NULL khi hóa đơn thiếu ngày |
-| product_key | INTEGER | FK | Khóa liên kết Dim_Product |
-| store_key | INTEGER | FK | Khóa liên kết Dim_Store |
-| quantity | INTEGER | | Số lượng sản phẩm bán |
-| unit_price | DECIMAL(18,2) | | Đơn giá ghi nhận từ dữ liệu nguồn |
-| reported_sales_amount | DECIMAL(18,2) | | Thành tiền ghi nhận từ dữ liệu nguồn |
-| calculated_sales_amount | DECIMAL(18,2) | | Thành tiền tính lại bằng số lượng nhân đơn giá |
-| difference_amount | DECIMAL(18,2) | | Chênh lệch giữa thành tiền nguồn và thành tiền tính |
-| reconciliation_status | VARCHAR(20) | | Trạng thái đối soát: MATCH hoặc MISMATCH |
+The SQLite database is created at:
 
-### 2.4. Nguồn dữ liệu
+`data/warehouse/mekong_mobile.db`
 
-Fact_Sales được xây dựng từ dữ liệu chi tiết bán hàng trong `order_items.csv`, kết hợp với thông tin hóa đơn trong `orders_2024_2026.csv` và khóa thay thế từ các bảng Dimension.
+The actual SQLite schema is defined in:
 
-### 2.5. Quy tắc nghiệp vụ
+`src/warehouse/schema.sql`
 
-**Quy tắc đối soát doanh thu:**
+### 1.3. Terminology
 
-- Giữ nguyên `reported_sales_amount` để bảo toàn số tiền được ghi nhận từ nguồn.
-- `calculated_sales_amount = quantity × unit_price`.
-- `difference_amount = reported_sales_amount - calculated_sales_amount`.
-- `reconciliation_status = MATCH` khi hai giá trị doanh thu bằng nhau.
-- `reconciliation_status = MISMATCH` khi hai giá trị doanh thu khác nhau.
-- Không tự động thay thế doanh thu nguồn bằng doanh thu tính toán.
+| Term | Meaning |
+|---|---|
+| Primary Key (PK) | Uniquely identifies each record in a table |
+| Foreign Key (FK) | References a record in another table |
+| UNIQUE | Prevents duplicate values in a defined column |
+| NOT NULL | Requires a value to be present |
+| CHECK | Validates values against a defined SQL condition |
+| Surrogate Key | A technical identifier used in the Data Warehouse |
+| Grain | The level of detail represented by one record |
+| PII | Personally Identifiable Information |
 
-**Quy tắc xử lý dữ liệu trùng:**
+### 1.4. Data Type Conventions
 
-- Dữ liệu nguồn có 11 dòng chi tiết trùng hoàn toàn.
-- ETL giữ lại các dòng này để bảo toàn dữ liệu gốc.
-- Mỗi dòng vẫn được phân biệt bằng `source_line_id`.
-- Không tự động loại bỏ dòng trùng khi chưa có quy tắc nghiệp vụ xác nhận chúng là bản ghi sai.
+The implemented SQLite database mainly uses two data types:
 
-**Quy tắc xử lý ngày thiếu:**
+- `INTEGER`: Used for numerical values, technical keys, quantities, and sales amounts.
+- `TEXT`: Used for identifiers, descriptions, dates, and reconciliation statuses.
 
-- Không tự tạo ngày giả định cho hóa đơn thiếu ngày.
-- Bản ghi thiếu ngày vẫn được giữ lại trong Fact_Sales với `date_key = NULL`.
-- Các bản ghi này được tính trong tổng doanh thu không giới hạn thời gian.
-- Các bản ghi có `date_key = NULL` không được đưa vào thống kê doanh thu theo ngày, tháng, quý hoặc năm.
+Earlier database design documents proposed types such as `BIGINT`, `VARCHAR`, and `DECIMAL`.
+
+However, this document uses the actual data types implemented in SQLite release `v1.0`.
+
+When pandas reads source CSV files, the inferred pandas data types may differ from SQLite storage types.
+
+The implemented schema is the reference for database column definitions and constraints.
 
 ---
 
-## 3. Dim_Date
+## 2. Fact_Sales Table
 
-### 3.1. Mục đích
+### 2.1. Purpose
 
-Dim_Date cung cấp thông tin thời gian để phục vụ phân tích doanh thu theo ngày, tháng, quý và năm.
+The `fact_sales` table stores detailed sales transactions and supports revenue reconciliation.
 
-### 3.2. Data Dictionary
+Each row represents one product detail row from `order_items.csv`.
 
-| Cột | Kiểu dữ liệu SQL đề xuất | Khóa / Ràng buộc | Mô tả |
-|---|---|---|---|
-| date_key | INTEGER | PK | Khóa ngày theo định dạng YYYYMMDD |
-| full_date | DATE | | Ngày đầy đủ |
-| day | INTEGER | | Ngày trong tháng |
-| month | INTEGER | | Tháng trong năm |
-| quarter | INTEGER | | Quý trong năm |
-| year | INTEGER | | Năm |
+### 2.2. Grain and Source Data
 
-### 3.3. Nguồn dữ liệu
+**Grain:** One source order-item row.
 
-Nguồn: Cột ngày hóa đơn trong `orders_2024_2026.csv`.
+The table is created using:
 
-### 3.4. Quy tắc biến đổi
+- `order_items.csv`
+- `orders_2024_2026.csv`
+- Product dimension keys
+- Store dimension keys
+- Date dimension keys
 
-- Chuẩn hóa các định dạng ngày khác nhau trong dữ liệu nguồn.
-- Chuyển đổi ngày hợp lệ sang định dạng ngày thống nhất.
-- Tạo `date_key` theo định dạng `YYYYMMDD`.
-- Trích xuất các thuộc tính ngày, tháng, quý và năm.
-- Chỉ tạo một bản ghi cho mỗi ngày hợp lệ.
-- Không tạo Dim_Date cho các hóa đơn thiếu ngày hoặc có giá trị ngày không thể chuyển đổi.
+Each row is uniquely identified by `source_line_id`.
+
+Fully duplicated source rows are preserved when no business rule confirms that they should be removed.
+
+### 2.3. Column Definitions
+
+| Column | SQLite Type | Description | Valid Values / Rules | Nullable | Classification | Security Handling |
+|---|---|---|---|---|---|---|
+| `sales_key` | INTEGER | Primary key of a sales record | Unique integer; PRIMARY KEY | No | Internal | Enforce primary key integrity |
+| `source_line_id` | TEXT | Unique identifier of a source detail row | Non-empty, unique value | No | Internal | Restrict access to source-level identifiers |
+| `order_id` | TEXT | Order identifier from source data | Non-empty text identifier | No | Internal | Do not publicly expose transaction identifiers |
+| `date_key` | INTEGER | Foreign key to `dim_date` | Valid date key in YYYYMMDD format or NULL | Yes | Internal | Validate foreign key relationships |
+| `product_key` | INTEGER | Foreign key to `dim_product` | Existing product key | No | Internal | Enforce foreign key integrity |
+| `store_key` | INTEGER | Foreign key to `dim_store` | Existing store key | No | Internal | Enforce foreign key integrity |
+| `quantity` | INTEGER | Quantity sold in the source detail row | Integer greater than 0 | No | Internal | Apply SQL CHECK constraint |
+| `unit_price` | INTEGER | Unit selling price | Non-negative integer | No | Business-sensitive | Limit access to pricing data |
+| `reported_sales_amount` | INTEGER | Sales amount reported by the source | Non-negative integer | No | Business-sensitive | Preserve original value and restrict access |
+| `calculated_sales_amount` | INTEGER | Sales amount calculated by the ETL pipeline | `quantity * unit_price` | No | Business-sensitive | Verify calculation against source fields |
+| `difference_amount` | INTEGER | Difference between reported and calculated amounts | Negative, zero, or positive integer | No | Business-sensitive | Preserve difference for reconciliation |
+| `reconciliation_status` | TEXT | Result of sales amount reconciliation | `MATCH` or `MISMATCH` | No | Internal | Validate allowed status values |
+
+**Total columns: 12.**
+
+### 2.4. Implemented Constraints
+
+The SQLite schema includes:
+
+- `sales_key`: PRIMARY KEY.
+- `source_line_id`: NOT NULL, UNIQUE.
+- `order_id`: NOT NULL.
+- `date_key`: Nullable FOREIGN KEY.
+- `product_key`: NOT NULL, FOREIGN KEY.
+- `store_key`: NOT NULL, FOREIGN KEY.
+- `quantity`: NOT NULL, CHECK greater than 0.
+- `unit_price`: NOT NULL, CHECK greater than or equal to 0.
+- `reported_sales_amount`: NOT NULL, CHECK greater than or equal to 0.
+- `calculated_sales_amount`: NOT NULL.
+- `difference_amount`: NOT NULL.
+- `reconciliation_status`: NOT NULL, CHECK allowing only MATCH or MISMATCH.
+
+The financial formulas are ETL business rules. They are not all independently enforced by SQLite CHECK constraints.
+
+### 2.5. Sales Reconciliation Rules
+
+The pipeline preserves the original reported sales amount.
+
+The calculated amount is:
+
+`calculated_sales_amount = quantity * unit_price`
+
+The difference is:
+
+`difference_amount = reported_sales_amount - calculated_sales_amount`
+
+Reconciliation status:
+
+- `MATCH`: The reported amount equals the calculated amount.
+- `MISMATCH`: The reported amount differs from the calculated amount.
+
+The original sales amount is not automatically replaced when a mismatch is found.
+
+### 2.6. Duplicate Source Records
+
+The full source dataset contains 11 completely duplicated order-item rows.
+
+These rows are preserved in the analytical Fact table because there is no confirmed business rule requiring their removal.
+
+The `source_line_id` distinguishes individual source detail rows.
+
+The system does not treat a repeated `ma_don` value as proof of a duplicated order, according to BR06.
+
+### 2.7. Missing Sales Dates
+
+Some source orders do not have a valid sales date.
+
+The pipeline does not create an artificial date.
+
+For these records:
+
+`date_key = NULL`
+
+The records are preserved in `fact_sales`.
+
+They remain part of overall revenue calculations that do not require a date filter.
+
+However, they cannot be assigned to a specific day, month, quarter, or year without additional source information.
 
 ---
 
-## 4. Dim_Product
+## 3. Dim_Date Table
 
-### 4.1. Mục đích
+### 3.1. Purpose
 
-Dim_Product lưu thông tin mô tả sản phẩm, hỗ trợ phân tích doanh thu theo sản phẩm, thương hiệu và nhóm sản phẩm.
+The `dim_date` table supports time-based sales analysis.
 
-### 4.2. Data Dictionary
+It provides calendar attributes for valid sales dates.
 
-| Cột | Kiểu dữ liệu SQL đề xuất | Khóa / Ràng buộc | Mô tả |
-|---|---|---|---|
-| product_key | INTEGER | PK | Khóa thay thế của sản phẩm |
-| product_id | VARCHAR(100) | UNIQUE | Mã sản phẩm trong dữ liệu nguồn |
-| product_name | VARCHAR(255) | | Tên sản phẩm |
-| brand | VARCHAR(255) | | Thương hiệu sản phẩm |
-| category | VARCHAR(255) | | Nhóm sản phẩm |
+### 3.2. Grain
 
-### 4.3. Nguồn dữ liệu
+**Grain:** One valid calendar date.
 
-Nguồn: `products.csv`.
+Each date appears once in the table.
 
-### 4.4. Quy tắc biến đổi
+### 3.3. Column Definitions
 
-- Đọc thông tin sản phẩm từ dữ liệu nguồn.
-- Chuẩn hóa tên cột sang cấu trúc của Dimension.
-- Đảm bảo mỗi `product_id` tương ứng với một bản ghi Dimension.
-- Sắp xếp danh sách sản phẩm theo mã sản phẩm.
-- Tạo `product_key` làm khóa thay thế.
+| Column | SQLite Type | Description | Valid Values / Rules | Nullable | Classification | Security Handling |
+|---|---|---|---|---|---|---|
+| `date_key` | INTEGER | Primary key representing a calendar date | Valid YYYYMMDD integer; unique | No | Internal | Enforce primary key integrity |
+| `full_date` | TEXT | Full calendar date | Valid normalized date string | No | Internal | Validate date formatting |
+| `day` | INTEGER | Day of the month | 1–31, consistent with the actual date | No | Internal | Validate date components |
+| `month` | INTEGER | Month of the year | 1–12 | No | Internal | Validate value range |
+| `quarter` | INTEGER | Calendar quarter | 1–4 | No | Internal | Check consistency with month |
+| `year` | INTEGER | Calendar year | Year derived from the normalized source date | No | Internal | Check consistency with the full date |
 
-Với cùng dữ liệu nguồn và cùng quy tắc sắp xếp, `product_key` được tạo nhất quán khi chạy lại ETL.
+**Total columns: 6.**
 
----
+### 3.4. Source and Transformation Rules
 
-## 5. Dim_Store
+The source date comes from the `ngay` column in `orders_2024_2026.csv`.
 
-### 5.1. Mục đích
+The ETL pipeline:
 
-Dim_Store lưu thông tin cửa hàng, hỗ trợ phân tích doanh thu theo cửa hàng, thành phố và quận/huyện.
+1. Reads the original sales date.
+2. Normalizes supported date formats.
+3. Converts valid dates into a consistent format.
+4. Creates a numeric `date_key` using YYYYMMDD.
+5. Extracts day, month, quarter, and year.
+6. Creates one Dimension record for each valid date.
 
-### 5.2. Data Dictionary
+Missing or unparseable dates are not replaced with invented calendar values.
 
-| Cột | Kiểu dữ liệu SQL đề xuất | Khóa / Ràng buộc | Mô tả |
-|---|---|---|---|
-| store_key | INTEGER | PK | Khóa thay thế của cửa hàng |
-| store_code | VARCHAR(100) | UNIQUE | Mã cửa hàng trong dữ liệu nguồn |
-| store_name | VARCHAR(255) | | Tên cửa hàng |
-| city | VARCHAR(255) | | Thành phố |
-| district | VARCHAR(255) | | Quận/huyện |
+### 3.5. Implemented Constraints
 
-### 5.3. Nguồn dữ liệu
+- `date_key`: PRIMARY KEY.
+- `full_date`: NOT NULL.
+- `day`: NOT NULL.
+- `month`: NOT NULL.
+- `quarter`: NOT NULL.
+- `year`: NOT NULL.
 
-Nguồn: `stores.csv`.
-
-### 5.4. Quy tắc biến đổi
-
-- Đọc thông tin cửa hàng từ dữ liệu nguồn.
-- Chuẩn hóa tên cột sang cấu trúc của Dimension.
-- Đảm bảo mỗi `store_code` tương ứng với một bản ghi Dimension.
-- Sắp xếp danh sách cửa hàng theo mã cửa hàng.
-- Tạo `store_key` làm khóa thay thế.
-
-Với cùng dữ liệu nguồn và cùng quy tắc sắp xếp, `store_key` được tạo nhất quán khi chạy lại ETL.
+Detailed date-range checks are handled by ETL and data validation logic rather than independent SQL CHECK constraints for every date attribute.
 
 ---
 
-## 6. Quan hệ giữa các bảng
+## 4. Dim_Product Table
 
-Kho dữ liệu sử dụng mô hình Star Schema với Fact_Sales ở trung tâm và 3 bảng Dimension.
+### 4.1. Purpose
 
-| Bảng Fact | Khóa ngoại | Bảng Dimension | Khóa chính | Quan hệ |
+The `dim_product` table stores information used to analyze revenue by product, brand, and product category.
+
+### 4.2. Grain
+
+**Grain:** One unique product.
+
+The source is:
+
+`products.csv`
+
+### 4.3. Column Definitions
+
+| Column | SQLite Type | Description | Valid Values / Rules | Nullable | Classification | Security Handling |
+|---|---|---|---|---|---|---|
+| `product_key` | INTEGER | Surrogate primary key of a product | Unique integer; PRIMARY KEY | No | Internal | Enforce primary key integrity |
+| `product_id` | TEXT | Product identifier from source data | Non-empty, unique text identifier | No | Internal | Apply UNIQUE constraint |
+| `product_name` | TEXT | Product name | Text value or NULL | Yes | Internal | Use only for authorized analysis |
+| `category` | TEXT | Product category | Text value or NULL | Yes | Internal | Control access to product data |
+| `brand` | TEXT | Product brand | Text value or NULL | Yes | Internal | Control access to product data |
+
+**Total columns: 5.**
+
+### 4.4. Transformation Rules
+
+The pipeline:
+
+1. Reads product data from `products.csv`.
+2. Normalizes the source column names.
+3. Maintains one Dimension record for each product identifier.
+4. Sorts product identifiers using the implemented ETL logic.
+5. Generates `product_key` values as surrogate keys.
+
+For the same source dataset and the same transformation rules, the generated keys are expected to remain consistent across repeated full-refresh executions.
+
+### 4.5. Implemented Constraints
+
+- `product_key`: PRIMARY KEY.
+- `product_id`: NOT NULL, UNIQUE.
+- `product_name`: Nullable.
+- `category`: Nullable.
+- `brand`: Nullable.
+
+The SQLite schema does not enforce a fixed list of allowed product brands or categories.
+
+---
+
+## 5. Dim_Store Table
+
+### 5.1. Purpose
+
+The `dim_store` table stores store information used for sales analysis by store, city, and district.
+
+### 5.2. Grain
+
+**Grain:** One unique store.
+
+The source is:
+
+`stores.csv`
+
+### 5.3. Column Definitions
+
+| Column | SQLite Type | Description | Valid Values / Rules | Nullable | Classification | Security Handling |
+|---|---|---|---|---|---|---|
+| `store_key` | INTEGER | Surrogate primary key of a store | Unique integer; PRIMARY KEY | No | Internal | Enforce primary key integrity |
+| `store_code` | TEXT | Store code from source data | Non-empty, unique text identifier | No | Internal | Apply UNIQUE constraint |
+| `store_name` | TEXT | Store name | Text value or NULL | Yes | Internal | Limit access to business information |
+| `city` | TEXT | City where the store operates | Text value or NULL | Yes | Internal | Use for authorized regional analysis |
+| `district` | TEXT | District where the store operates | Text value or NULL | Yes | Internal | Use for authorized regional analysis |
+
+**Total columns: 5.**
+
+### 5.4. Transformation Rules
+
+The pipeline:
+
+1. Reads store data from `stores.csv`.
+2. Normalizes source column names.
+3. Maintains one Dimension record for each store code.
+4. Sorts store codes according to the implemented ETL logic.
+5. Generates `store_key` values.
+
+For unchanged source data and transformation rules, the generated keys are expected to remain consistent during reruns.
+
+### 5.5. Implemented Constraints
+
+- `store_key`: PRIMARY KEY.
+- `store_code`: NOT NULL, UNIQUE.
+- `store_name`: Nullable.
+- `city`: Nullable.
+- `district`: Nullable.
+
+---
+
+## 6. Relationships Between Tables
+
+The Data Warehouse uses a Star Schema.
+
+The central `fact_sales` table references three Dimension tables.
+
+| Fact Table | Foreign Key | Dimension Table | Primary Key | Relationship |
 |---|---|---|---|---|
-| Fact_Sales | date_key | Dim_Date | date_key | N:1 |
-| Fact_Sales | product_key | Dim_Product | product_key | N:1 |
-| Fact_Sales | store_key | Dim_Store | store_key | N:1 |
+| `fact_sales` | `date_key` | `dim_date` | `date_key` | Many-to-one |
+| `fact_sales` | `product_key` | `dim_product` | `product_key` | Many-to-one |
+| `fact_sales` | `store_key` | `dim_store` | `store_key` | Many-to-one |
 
-### 6.1. Nguyên tắc liên kết
+### 6.1. Relationship Rules
 
-- Mỗi dòng Fact_Sales liên kết với một sản phẩm thông qua `product_key`.
-- Mỗi dòng Fact_Sales liên kết với một cửa hàng thông qua `store_key`.
-- Mỗi dòng Fact_Sales có ngày hợp lệ liên kết với Dim_Date thông qua `date_key`.
-- Dòng Fact_Sales có `date_key = NULL` không liên kết với Dim_Date nhưng vẫn được giữ lại.
+- Each sales detail row must reference an existing product.
+- Each sales detail row must reference an existing store.
+- Sales records with a valid date reference an existing Date Dimension row.
+- Sales records with a missing date may keep `date_key = NULL`.
 
-### 6.2. Lưu ý khi phân tích doanh thu
+### 6.2. Foreign Key Verification
 
-Khi phân tích doanh thu theo thời gian, chỉ sử dụng các dòng Fact_Sales có `date_key` hợp lệ.
+The SQLite database-building program uses:
 
-Khi tính tổng doanh thu không giới hạn thời gian, vẫn bao gồm những dòng Fact_Sales có `date_key = NULL`.
+`PRAGMA foreign_keys = ON`
 
-Quy tắc này giúp tránh tự suy diễn ngày bán đồng thời vẫn bảo toàn dữ liệu nguồn.
+The pipeline also uses:
 
----
+`PRAGMA foreign_key_check`
 
-## 7. Kết quả kiểm thử ETL
+These operations support foreign key enforcement and verification during SQLite processing.
 
-### 7.1. Số lượng bản ghi
+The foreign key constraints are defined in `src/warehouse/schema.sql`.
 
-| Chỉ tiêu | Kết quả |
-|---|---:|
-| Số dòng Fact_Sales | 35.697 |
-| Số dòng Dim_Date | 792 |
-| Số dòng Dim_Product | 320 |
-| Số dòng Dim_Store | 24 |
-| Dòng đối soát MATCH | 35.177 |
-| Dòng đối soát MISMATCH | 520 |
-| Hóa đơn nguồn thiếu ngày | 114 |
-| Dòng Fact_Sales thiếu date_key | 154 |
-| Dòng Fact_Sales thiếu product_key | 0 |
-| Dòng Fact_Sales thiếu store_key | 0 |
-| Dòng chi tiết trùng hoàn toàn trong nguồn | 11 |
+### 6.3. Time-Based Analysis
 
-### 7.2. Kiểm tra bảo toàn dữ liệu
+Rows with a NULL `date_key` are not assigned to a calendar period.
 
-| Chỉ tiêu | Kết quả |
-|---|---:|
-| Số dòng chi tiết bán hàng nguồn | 35.697 |
-| Số dòng Fact_Sales sau ETL | 35.697 |
-| Chênh lệch số dòng | 0 |
-| Tổng reported_sales_amount nguồn (VND) | 415.773.438.750 |
-| Tổng reported_sales_amount trong Fact_Sales (VND) | 415.773.438.750 |
-| Chênh lệch tổng doanh thu nguồn và Fact (VND) | 0 |
+They may still be included in overall revenue measures without time-based filtering.
 
-Các kết quả cho thấy số dòng chi tiết bán hàng và tổng doanh thu ghi nhận từ nguồn được bảo toàn sau ETL.
-
-Kết quả này không đồng nghĩa với việc mọi trường dữ liệu đã được xác minh chính xác; các kiểm tra khóa, quan hệ và chất lượng dữ liệu được trình bày ở Mục 8.
+This rule preserves original sales information without inventing missing dates.
 
 ---
 
-## 8. Kiểm tra tính toàn vẹn dữ liệu (Data Integrity)
+## 7. ETL Verification Results
 
-### 8.1. Mục đích kiểm thử
+### 7.1. Full Dataset Record Counts
 
-Kiểm tra tính toàn vẹn dữ liệu của mô hình Star Schema sau ETL, bao gồm:
+The following results were recorded for the full dataset.
 
-- Tính duy nhất và không NULL của khóa chính (PK).
-- Tính hợp lệ của khóa ngoại (FK).
-- Tính duy nhất của mã dòng dữ liệu nguồn.
-- Kết quả phân loại đối soát doanh thu.
+| Metric | Result |
+|---|---:|
+| `fact_sales` rows | 35,697 |
+| `dim_date` rows | 792 |
+| `dim_product` rows | 320 |
+| `dim_store` rows | 24 |
+| `MATCH` rows | 35,177 |
+| `MISMATCH` rows | 520 |
+| Source orders with missing dates | 114 |
+| Fact rows with NULL `date_key` | 154 |
+| Fact rows with NULL `product_key` | 0 |
+| Fact rows with NULL `store_key` | 0 |
+| Completely duplicated source detail rows | 11 |
 
-### 8.2. Kết quả kiểm thử
+### 7.2. Source Data Preservation
 
-| Hạng mục | Kết quả | Trạng thái |
+The recorded verification results are:
+
+| Verification Metric | Result |
+|---|---:|
+| Source order-item rows | 35,697 |
+| Fact rows after ETL | 35,697 |
+| Row count difference | 0 |
+| Source reported sales amount | 415,773,438,750 VND |
+| Fact reported sales amount | 415,773,438,750 VND |
+| Reported revenue difference | 0 VND |
+
+These results show that the recorded ETL execution preserved the source row count and total reported revenue.
+
+They do not prove that every source field is correct.
+
+### 7.3. Data Integrity Verification
+
+| Verification Item | Recorded Result | Status |
 |---|---|---|
-| PK Fact_Sales | 0 trùng, 0 NULL | PASS |
-| PK Dim_Date | 0 trùng, 0 NULL | PASS |
-| PK Dim_Product | 0 trùng, 0 NULL | PASS |
-| PK Dim_Store | 0 trùng, 0 NULL | PASS |
-| FK product_key | 0 NULL, 0 tham chiếu không tồn tại | PASS |
-| FK store_key | 0 NULL, 0 tham chiếu không tồn tại | PASS |
-| FK date_key | 154 NULL, 0 tham chiếu không tồn tại | PASS |
-| source_line_id | 0 trùng, 0 NULL | PASS |
-| Đối soát doanh thu | 35.177 MATCH, 520 MISMATCH | PASS |
+| `fact_sales` primary key | 0 duplicates, 0 NULL | PASS |
+| `dim_date` primary key | 0 duplicates, 0 NULL | PASS |
+| `dim_product` primary key | 0 duplicates, 0 NULL | PASS |
+| `dim_store` primary key | 0 duplicates, 0 NULL | PASS |
+| `product_key` foreign key | 0 NULL, 0 invalid references | PASS |
+| `store_key` foreign key | 0 NULL, 0 invalid references | PASS |
+| `date_key` foreign key | 154 allowed NULL, 0 invalid references | PASS |
+| `source_line_id` | 0 duplicates, 0 NULL | PASS |
+| Sales reconciliation processing | 35,177 MATCH, 520 MISMATCH | PASS |
 
-**Quy ước đánh giá:** PASS nghĩa là kết quả phù hợp với quy tắc chất lượng dữ liệu và ngoại lệ đã được xác định trong thiết kế.
+A PASS result means that the checked data meets the defined integrity or reconciliation rule.
 
-### 8.3. Giải thích dữ liệu thiếu ngày
+For sales reconciliation, PASS means that the system correctly preserves and classifies the differences. It does not mean that all source sales amounts match calculated values.
 
-Dữ liệu nguồn có 114 hóa đơn thiếu ngày, tương ứng với 154 dòng chi tiết bán hàng trong Fact_Sales không có `date_key`.
+### 7.4. Data Integrity Evidence
 
-Theo quy tắc nghiệp vụ:
+The repository contains data integrity verification logic at:
 
-- Không tự tạo ngày bán giả định.
-- Giữ lại các dòng có `date_key = NULL`.
-- Bao gồm những dòng này trong tổng doanh thu không giới hạn thời gian.
-- Không đưa các dòng này vào phân tích doanh thu theo ngày, tháng, quý hoặc năm.
+`src/quality/check_warehouse.py`
 
-Việc có 154 giá trị NULL trong `Fact_Sales.date_key` là ngoại lệ được cho phép, không phải lỗi tham chiếu khóa ngoại.
+The previously captured evidence is located at:
 
-### 8.4. Giải thích kết quả đối soát doanh thu
+`docs/evidence/warehouse_integrity_check.PNG`
 
-Trong tổng số 35.697 dòng bán hàng:
+The verification results originally recorded for the Warehouse CSV outputs are retained as development evidence.
 
-- 35.177 dòng có trạng thái MATCH.
-- 520 dòng có trạng thái MISMATCH.
-
-520 dòng MISMATCH phản ánh chênh lệch giữa số tiền nguồn và số tiền tính lại.
-
-Hệ thống giữ cả hai giá trị doanh thu để phục vụ đối soát, không tự động sửa số tiền nguồn.
-
-Do đó, trạng thái PASS của kiểm thử đối soát thể hiện việc dữ liệu được phân loại và bảo toàn theo quy tắc, không có nghĩa là tất cả dòng bán hàng đều có số tiền khớp nhau.
-
-### 8.5. Kết luận kiểm thử
-
-Các phép kiểm tra tính toàn vẹn dữ liệu đều đạt theo quy tắc thiết kế đã xác định.
-
-Kết quả:
-
-- Không phát hiện khóa chính trùng lặp hoặc có giá trị NULL.
-- Không phát hiện khóa ngoại có giá trị không tồn tại trong bảng Dimension tương ứng.
-- Không phát hiện source_line_id trùng lặp hoặc có giá trị NULL.
-- Các bản ghi thiếu ngày được giữ lại đúng chính sách.
-- Các trường hợp chênh lệch doanh thu được phân loại và bảo toàn.
-
-Kết quả được kiểm tra bằng Python trên các file CSV đầu ra. Kết quả kiểm thử tính toàn vẹn dữ liệu ban đầu được thực hiện bằng Python trên các file CSV đầu ra của ETL.
-
-Trong phiên bản BT3, hệ thống đã bổ sung SQLite Data Warehouse. Các ràng buộc PRIMARY KEY, FOREIGN KEY, UNIQUE, NOT NULL và CHECK được khai báo trong `src/warehouse/schema.sql`.
-
-Chương trình `src/warehouse/build_sqlite_dwh.py` sử dụng `PRAGMA foreign_keys = ON` và `PRAGMA foreign_key_check` để kiểm tra quan hệ khóa ngoại trong quá trình nạp dữ liệu.
-
-Các kết quả kiểm thử CSV trước đó được giữ lại làm minh chứng cho quá trình phát triển hệ thống.
-### 8.6. Minh chứng kiểm thử
-
-**Mã nguồn kiểm thử:** `src/quality/check_warehouse.py`
-
-**Ảnh minh chứng:**
-
-![Kết quả kiểm tra tính toàn vẹn Data Warehouse](evidence/warehouse_integrity_check.PNG)
+SQLite constraints provide additional structural verification in BT3.
 
 ---
 
-## 9. Giới hạn hiện tại và hướng hoàn thiện
+## 8. Data Quality Assessment
 
-### 9.1. Giới hạn hiện tại
+### 8.1. Three Quality Dimensions
 
-- Kho dữ liệu đã được lưu dưới dạng CSV và SQLite Data Warehouse, tuy nhiên chưa triển khai trên hệ quản trị cơ sở dữ liệu máy chủ như PostgreSQL hoặc SQL Server.
+BT3 includes a separate data quality assessment over 27 source columns.
 
-- SQLite đã có các bảng vật lý và ràng buộc PRIMARY KEY, FOREIGN KEY, UNIQUE, NOT NULL và CHECK theo src/warehouse/schema.sql.
+The assessment program is:
 
-- Các kiểu dữ liệu SQL ở những mục trước phản ánh thiết kế đề xuất ban đầu; kiểu dữ liệu SQLite thực tế được mô tả tại Mục 10.
+`scripts/check_data_quality_bt3.py`
 
-- Hệ thống hiện xử lý dữ liệu theo lô (batch ETL), chưa hỗ trợ cập nhật tăng dần (incremental loading).
+| Quality Dimension | PASS | FAIL | N/A |
+|---|---:|---:|---:|
+| Completeness | 26 | 1 | 0 |
+| Validity | 27 | 0 | 0 |
+| Consistency | 8 | 1 | 18 |
 
-- Chưa triển khai cơ chế quản lý lịch sử thay đổi Dimension (Slowly Changing Dimensions).
+Detailed reports:
 
-- Chưa kiểm thử việc đóng gói và chạy ETL thực tế trong Docker.
+- `docs/evidence/data_quality_bt3.json`
+- `docs/evidence/data_quality_bt3.csv`
 
-- Chưa có cơ chế tự động lập lịch chạy ETL trên môi trường production.
+### 8.2. Identified Issues
 
-### 9.2. Hướng hoàn thiện
+**Issue DQ-01: Employee Information Completeness**
 
-- Triển khai kho dữ liệu vào hệ quản trị cơ sở dữ liệu nếu thuộc phạm vi đồ án.
-- Chuyển đổi và kiểm tra kiểu dữ liệu theo Data Dictionary.
-- Áp dụng ràng buộc PK, FK, UNIQUE và NULL theo thiết kế.
-- Hoàn thiện các bài kiểm thử dữ liệu tự động.
-- Xây dựng Dashboard phân tích doanh thu từ dữ liệu đã xử lý.
-- Tiếp tục đối chiếu kết quả Dashboard với dữ liệu Fact_Sales.
+- File: `orders_2024_2026.csv`
+- Column: `nhan_vien`
+- Completeness: 96.11%
+- Threshold: 99%
+- Result: FAIL
 
-Tài liệu Data Dictionary sẽ được cập nhật khi cấu trúc hoặc quy tắc dữ liệu có thay đổi.
+**Issue DQ-02: Sales Amount Consistency**
+
+- File: `order_items.csv`
+- Column: `thanh_tien`
+- Consistency: 98.54%
+- Threshold: 99%
+- Matching rows: 35,177
+- Mismatched rows: 520
+- Result: FAIL
+
+These issues are documented without automatically modifying the original source values.
+
+### 8.3. Assessment Limitations
+
+The quality assessment uses defined project-level thresholds.
+
+Validity results are limited to the implemented rules.
+
+For some text fields, validity checking focuses on non-empty values rather than complete business validation.
+
+Columns without applicable consistency rules are marked `N/A`.
+
+Therefore, the quality results describe the current scope of checking and should not be interpreted as proof of complete data accuracy.
 
 ---
 
-## 10. Cập nhật Data Dictionary cho SQLite Warehouse (BT3)
+## 9. Data Classification and Security
 
-### 10.1. Môi trường lưu trữ thực tế
+### 9.1. Classification Policy
 
-Trong phiên bản BT3, ngoài các file CSV, hệ thống đã bổ sung SQLite Data Warehouse.
+The analytical data is classified into two main groups:
 
-- Database: `data/warehouse/mekong_mobile.db`
-- Schema: `src/warehouse/schema.sql`
-- Chương trình tạo database: `src/warehouse/build_sqlite_dwh.py`
-- Cấu trúc: Star Schema gồm 1 Fact và 3 Dimension.
+- **Internal:** Technical keys, product information, store information, and non-public transaction identifiers.
+- **Business-sensitive:** Unit prices, reported sales amounts, calculated sales amounts, and reconciliation differences.
 
-Các kiểu dữ liệu trong SQLite là kiểu triển khai thực tế, khác với một số kiểu SQL đề xuất ở các mục trước.
+These classifications describe the intended handling of data.
 
-### 10.2. Kiểu dữ liệu và ràng buộc SQLite
+They do not mean that SQLite currently provides column-level access control.
 
-| Bảng | Cột | Kiểu SQLite | Ràng buộc |
-|---|---|---|---|
-| dim_date | date_key | INTEGER | PRIMARY KEY |
-| dim_date | full_date | TEXT | NOT NULL |
-| dim_date | day, month, quarter, year | INTEGER | NOT NULL |
-| dim_product | product_key | INTEGER | PRIMARY KEY |
-| dim_product | product_id | TEXT | NOT NULL, UNIQUE |
-| dim_product | product_name, category, brand | TEXT | Cho phép NULL |
-| dim_store | store_key | INTEGER | PRIMARY KEY |
-| dim_store | store_code | TEXT | NOT NULL, UNIQUE |
-| dim_store | store_name, city, district | TEXT | Cho phép NULL |
-| fact_sales | sales_key | INTEGER | PRIMARY KEY |
-| fact_sales | source_line_id | TEXT | NOT NULL, UNIQUE |
-| fact_sales | order_id | TEXT | NOT NULL |
-| fact_sales | date_key | INTEGER | FOREIGN KEY, cho phép NULL |
-| fact_sales | product_key | INTEGER | NOT NULL, FOREIGN KEY |
-| fact_sales | store_key | INTEGER | NOT NULL, FOREIGN KEY |
-| fact_sales | quantity | INTEGER | NOT NULL, CHECK > 0 |
-| fact_sales | unit_price | INTEGER | NOT NULL, CHECK >= 0 |
-| fact_sales | reported_sales_amount | INTEGER | NOT NULL, CHECK >= 0 |
-| fact_sales | calculated_sales_amount | INTEGER | NOT NULL |
-| fact_sales | difference_amount | INTEGER | NOT NULL |
-| fact_sales | reconciliation_status | TEXT | NOT NULL, CHECK MATCH/MISMATCH |
+### 9.2. Personal Information
 
-### 10.3. Phân loại và bảo mật dữ liệu
+The source file `orders_2024_2026.csv` contains customer-related fields such as:
 
-| Nhóm dữ liệu | Ví dụ | Phân loại | Biện pháp bảo vệ |
-|---|---|---|---|
-| Mã định danh giao dịch | order_id, source_line_id | Nội bộ | Giới hạn quyền truy cập file dữ liệu |
-| Thông tin sản phẩm | product_id, product_name, brand | Nội bộ | Chỉ sử dụng trong phạm vi phân tích |
-| Thông tin cửa hàng | store_code, store_name, city, district | Nội bộ | Kiểm soát quyền truy cập dữ liệu |
-| Doanh thu và đơn giá | unit_price, reported_sales_amount, calculated_sales_amount | Nhạy cảm về kinh doanh | Không công khai dữ liệu thực tế |
-| Thời gian và khóa kỹ thuật | date_key, sales_key, product_key, store_key | Nội bộ | Duy trì tính toàn vẹn dữ liệu |
-| Trạng thái đối soát | reconciliation_status, difference_amount | Nội bộ | Bảo vệ tính chính xác của báo cáo |
+- `ten_khach`
+- `so_dien_thoai`
 
-Dữ liệu mẫu được sử dụng cho mục đích minh họa và kiểm thử triển khai.
+These two fields are not included in the 28 columns of the analytical Star Schema.
 
-### 10.4. Nguyên tắc triển khai và kiểm thử
+The analytical Warehouse is designed to avoid directly exporting these customer identifiers.
 
-- SQLite thực thi các ràng buộc PRIMARY KEY, FOREIGN KEY, UNIQUE, NOT NULL và CHECK theo schema.
-- Chương trình tạo database bật `PRAGMA foreign_keys = ON`.
-- Database mới được tạo ở file tạm và chỉ thay thế database cũ sau khi nạp thành công.
-- Các file CSV Warehouse được tạo lại khi chạy ETL, không nối thêm dữ liệu cũ.
-- Chưa triển khai cơ chế mã hóa SQLite ở trạng thái lưu trữ.
-- Cần kiểm thử Docker thực tế trước khi phát hành phiên bản v1.0.
+However, the source CSV files may still contain personal information.
 
+They require appropriate storage and access restrictions.
+
+### 9.3. Security Handling
+
+The recommended controls include:
+
+1. Restrict access to real sales data.
+2. Avoid publishing source CSV files containing customer information.
+3. Preserve data integrity using defined SQL constraints.
+4. Validate important numeric and identifier fields.
+5. Protect business-sensitive sales amounts.
+6. Exclude secret configuration files from version control.
+7. Review security requirements before production deployment.
+
+The current prototype has not implemented complete database encryption or production-grade role-based access control.
+
+### 9.4. Implemented and Recommended Controls
+
+| Control | Current Status |
+|---|---|
+| Primary key constraints | Implemented in SQLite |
+| Foreign key constraints | Defined and checked in SQLite processing |
+| UNIQUE constraints | Implemented for selected identifiers |
+| NOT NULL constraints | Implemented for required columns |
+| CHECK constraints | Implemented for selected values |
+| Removal of direct customer identifiers from analytical schema | Implemented for `ten_khach` and `so_dien_thoai` |
+| SQLite file encryption | Not implemented |
+| Column-level user authorization | Not implemented |
+| Production database access management | Not implemented |
+
+---
+
+## 10. SQLite Implementation and Verification
+
+### 10.1. Database Implementation
+
+The SQLite Data Warehouse is created by:
+
+`src/warehouse/build_sqlite_dwh.py`
+
+The table definitions are provided in:
+
+`src/warehouse/schema.sql`
+
+The database output is:
+
+`data/warehouse/mekong_mobile.db`
+
+The system uses PRIMARY KEY, FOREIGN KEY, UNIQUE, NOT NULL, and selected CHECK constraints.
+
+### 10.2. Implemented Data Types
+
+The actual SQLite schema uses:
+
+| Data Category | SQLite Storage Type |
+|---|---|
+| Primary and foreign keys | INTEGER or TEXT, depending on the column |
+| Product and store descriptions | TEXT |
+| Date descriptions | TEXT |
+| Quantities | INTEGER |
+| Sales amounts | INTEGER |
+| Reconciliation status | TEXT |
+
+The original design proposed some different SQL types, including `DECIMAL(18,2)` and `VARCHAR`.
+
+Those were design suggestions and are not the implemented SQLite column declarations.
+
+### 10.3. Sample Dataset Verification
+
+The Docker deployment uses a small sample dataset.
+
+Expected output:
+
+| SQLite Table | Expected Rows |
+|---|---:|
+| `dim_date` | 3 |
+| `dim_product` | 3 |
+| `dim_store` | 2 |
+| `fact_sales` | 4 |
+
+These counts are separate from the full-dataset results in Section 7.
+
+### 10.4. Docker Verification
+
+The ETL application was successfully executed using Docker on GitHub Actions Ubuntu Linux.
+
+The verification included:
+
+- Building the Docker Image.
+- Running the ETL pipeline.
+- Creating SQLite tables.
+- Checking expected record counts.
+- Running the pipeline again.
+- Running pytest inside Docker.
+
+A separate workflow also verified a clean clone of Git tag `v1.0`.
+
+Docker Desktop execution on the local Windows computer was not successfully verified.
+
+---
+
+## 11. Current Limitations and Future Improvements
+
+### 11.1. Current Limitations
+
+The current implementation has the following limitations:
+
+- SQLite is a file-based database rather than a database server.
+- The ETL pipeline uses batch processing.
+- Incremental Loading is not implemented.
+- Slowly Changing Dimensions are not implemented.
+- Production scheduling is not available.
+- SQLite file encryption is not implemented.
+- Complete user authorization and access control are not implemented.
+- Some source data quality issues remain unresolved.
+- Power BI runs outside the Docker ETL container.
+
+### 11.2. Future Improvements
+
+Future development may include:
+
+1. Support for Incremental Loading.
+2. Automated ETL scheduling.
+3. Improved data quality monitoring.
+4. More detailed sales mismatch investigation.
+5. Database security and access management.
+6. Historical tracking for changing Dimension attributes.
+7. Deployment to a server-based data platform when required.
+
+These items are future development options and are not presented as completed features.
+
+---
+
+## 12. Conclusion
+
+The Mekong Mobile Data Warehouse contains four analytical tables with 28 columns.
+
+The Data Dictionary describes each column using its implemented SQLite type, meaning, valid values, nullability, sensitivity classification, and security handling.
+
+The full dataset verification recorded 35,697 Fact rows, including 35,177 matching sales amounts and 520 mismatched amounts.
+
+The system preserves source sales amounts, supports data integrity checking, and avoids exporting the direct customer fields `ten_khach` and `so_dien_thoai` into the analytical Star Schema.
+
+Docker execution has been successfully verified using GitHub Actions.
+
+The current prototype is suitable for academic demonstration and further improvement, subject to the documented data quality, security, and deployment limitations.
+
+**Related Documents**
+
+- `docs/srs.md`
+- `docs/pipeline-documentation.md`
+- `docs/deployment-guide.md`
+- `docs/security-checklist.md`
+- `docs/evidence/data_quality_bt3.json`
+- `src/warehouse/schema.sql`
