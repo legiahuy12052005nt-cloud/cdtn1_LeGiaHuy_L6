@@ -1,490 +1,535 @@
-# TÀI LIỆU QUY TRÌNH ETL – MEKONG MOBILE
+# ETL PIPELINE DOCUMENTATION – MEKONG MOBILE DATA WAREHOUSE
 
-## 1. Tổng quan quy trình ETL
+**Project:** Sales Data Warehouse and Revenue Analysis Dashboard for Mekong Mobile  
+**Student:** Le Gia Huy  
+**Student ID:** 2374802010175  
+**Track:** DA – L6  
+**Release:** v1.0  
+**Repository:** https://github.com/legiahuy12052005nt-cloud/cdtn1_LeGiaHuy_L6
 
-Hệ thống Mekong Mobile sử dụng quy trình ETL để xử lý dữ liệu bán hàng từ các file CSV, làm sạch dữ liệu, đối soát doanh thu và xây dựng kho dữ liệu SQLite theo mô hình Star Schema.
+---
 
-Hệ thống được phát triển bằng Python 3.10.11 và thư viện pandas.
+## 1. Pipeline Overview
 
-### 1.1. Sơ đồ quy trình
+The Mekong Mobile project uses an ETL (Extract, Transform, Load) pipeline to process sales data from CSV files and build a SQLite Data Warehouse.
+
+The pipeline is developed using Python 3.10.11 and pandas.
+
+Its main purposes are to clean and validate sales data, reconcile sales amounts, handle invalid records, and prepare Fact and Dimension tables for analysis.
+
+### 1.1. Pipeline Architecture
+
+The data processing flow is:
 
 ```text
-Dữ liệu nguồn CSV
-        |
-        v
-Đọc dữ liệu (Extract)
-        |
-        v
-Chuẩn hóa và biến đổi (Transform)
-        |
-        v
-Kiểm tra chất lượng dữ liệu
-        |
-        +------> Dữ liệu bị từ chối (Rejected CSV)
-        |
-        v
-Đối soát doanh thu
-        |
-        v
-Dữ liệu chi tiết đã xử lý (Processed CSV)
-        |
-        v
-Xây dựng bảng Fact và Dimension
-        |
-        v
-Xuất các bảng Warehouse dạng CSV
-        |
-        v
-Nạp SQLite Data Warehouse
-        |
-        v
+Source CSV Files
+       |
+       v
+Extract Data
+       |
+       v
+Transform and Normalize Data
+       |
+       v
+Data Quality Validation
+       |
+       +------> Rejected Records (CSV)
+       |
+       v
+Sales Reconciliation
+       |
+       v
+Processed Sales Data (CSV)
+       |
+       v
+Build Fact and Dimension Tables
+       |
+       v
+Export Warehouse CSV Files
+       |
+       v
+Load SQLite Data Warehouse
+       |
+       v
 Power BI Dashboard
 ```
 
-File thực thi chính của quy trình là `run_etl.py`.
+The main execution file is `run_etl.py`.
 
-### 1.2. Mục tiêu
+Power BI uses the exported Warehouse CSV files. It runs separately from the Docker ETL container.
 
-- Chuẩn hóa dữ liệu bán hàng từ các nguồn CSV.
-- Kiểm tra dữ liệu đầu vào theo quy tắc nghiệp vụ.
-- Phân loại dữ liệu hợp lệ và dữ liệu bị từ chối.
-- Bảo toàn doanh thu gốc và ghi nhận các trường hợp chênh lệch.
-- Xây dựng các bảng Fact và Dimension phục vụ phân tích.
-- Tạo kho dữ liệu SQLite có thể kiểm tra và tái lập.
+### 1.2. Pipeline Objectives
 
-## 2. Nguồn dữ liệu đầu vào
+The ETL pipeline is designed to:
 
-Quy trình ETL sử dụng bốn file CSV chính.
+1. Read sales data from four CSV files.
+2. Normalize column names and data formats.
+3. Validate important business rules.
+4. Separate invalid records and record rejection reasons.
+5. Preserve original reported sales amounts.
+6. Calculate sales amounts for reconciliation.
+7. Build Fact and Dimension tables.
+8. Export analytical data to CSV and SQLite.
+9. Support reproducible execution using sample data.
 
-| File nguồn | Nội dung |
+---
+
+## 2. Source Data
+
+### 2.1. Input Files
+
+The pipeline uses four main CSV files.
+
+| Source File | Description |
 |---|---|
-| `orders_2024_2026.csv` | Thông tin đơn hàng, ngày bán và cửa hàng |
-| `order_items.csv` | Chi tiết sản phẩm trong đơn hàng |
-| `products.csv` | Danh mục sản phẩm |
-| `stores.csv` | Danh mục cửa hàng |
+| `orders_2024_2026.csv` | Order information, sales dates, and store references |
+| `order_items.csv` | Product details, quantities, prices, and reported sales amounts |
+| `products.csv` | Product information and categories |
+| `stores.csv` | Store information and locations |
 
-Thư mục dữ liệu nguồn mặc định: `data/raw/`.
+The default source data directory is:
 
-Đối với môi trường Docker, bốn file mẫu trong `data/sample/` được sao chép vào `data/raw/` bên trong container khi xây dựng Docker Image.
+`data/raw/`
 
-File `customers_raw.csv` không được sử dụng trong quy trình ETL hiện tại vì nằm ngoài phạm vi Star Schema đã triển khai.
+For Docker deployment, the sample CSV files from `data/sample/` are copied into the container during the Docker Image build.
 
-### 2.1. Quy tắc liên kết dữ liệu nguồn
+The file `customers_raw.csv` is not used in the current analytical ETL pipeline.
 
-| Quy tắc | Nội dung |
+### 2.2. Business Rules
+
+The project follows the business rules documented in `docs/srs.md`.
+
+| Rule | Description |
 |---|---|
-| BR02 | `orders.ma_cua_hang` tham chiếu `stores.store_code` |
-| BR03 | `order_items.product_id` tham chiếu `products.product_id` |
-| BR04 | Ngày được chuẩn hóa theo định dạng nguồn; không tự tạo ngày khi bị thiếu |
-| BR05 | Giữ nguyên doanh thu nguồn và tính thêm giá trị đối chiếu |
-| BR06 | Không sử dụng `ma_don` làm khóa duy nhất |
-| BR07 | Mỗi dòng dữ liệu cần có định danh ổn định |
-| BR08 | Tổng số đơn hàng được tính theo `DISTINCT order_id` |
-| BR09 | Dòng chênh lệch doanh thu phải được đánh dấu phục vụ đối soát |
+| BR02 | `orders.ma_cua_hang` must reference `stores.store_code`. |
+| BR03 | `order_items.product_id` must reference `products.product_id`. |
+| BR04 | Missing sales dates must not be replaced with invented dates. |
+| BR05 | Original reported sales amounts must be preserved for reconciliation. |
+| BR06 | `ma_don` must not be treated as a unique order identifier. |
+| BR07 | Each source detail row must have a stable identifier. |
+| BR08 | The number of orders must be calculated using `COUNT(DISTINCT order_id)`. |
+| BR09 | Sales amount differences must be marked for reconciliation. |
 
-Các quy tắc được định nghĩa trong `docs/srs.md`.
+These rules help preserve source data and ensure consistent analytical results.
 
-## 3. Các bảng đích và mức độ chi tiết dữ liệu
+---
 
-Kho dữ liệu sử dụng mô hình Star Schema gồm một bảng Fact và ba bảng Dimension.
+## 3. Target Data Warehouse
 
-| Bảng | Mức độ chi tiết (Grain) |
+### 3.1. Star Schema
+
+The Data Warehouse uses a Star Schema with one Fact table and three Dimension tables.
+
+| Table | Grain | Purpose |
+|---|---|---|
+| `fact_sales` | One source order-item row | Stores sales transactions and reconciliation results |
+| `dim_date` | One valid calendar date | Supports time-based analysis |
+| `dim_product` | One unique product | Supports product and category analysis |
+| `dim_store` | One unique store | Supports store and location analysis |
+
+The `fact_sales` table contains a stable `source_line_id` and references the Dimension tables through foreign keys.
+
+A missing source sales date is not replaced with an artificial date. The corresponding `date_key` may remain NULL.
+
+### 3.2. Warehouse Structure
+
+The four tables contain 28 columns in total.
+
+| Table | Number of Columns |
+|---|---:|
+| `fact_sales` | 12 |
+| `dim_date` | 6 |
+| `dim_product` | 5 |
+| `dim_store` | 5 |
+| **Total** | **28** |
+
+The SQLite schema is defined in:
+
+`src/warehouse/schema.sql`
+
+The detailed descriptions of all 28 columns are maintained separately in:
+
+`docs/data-dictionary.md`
+
+### 3.3. Output Locations
+
+| Output | Location |
 |---|---|
-| `Fact_Sales` | Một dòng chi tiết sản phẩm trong đơn hàng nguồn |
-| `Dim_Date` | Một ngày hợp lệ |
-| `Dim_Product` | Một sản phẩm duy nhất |
-| `Dim_Store` | Một cửa hàng duy nhất |
+| Processed sales data | `data/processed/clean_order_items.csv` |
+| Rejected records | `data/rejected/rejected_order_items.csv` |
+| Warehouse CSV files | `data/warehouse/` |
+| SQLite database | `data/warehouse/mekong_mobile.db` |
 
-Bảng `Fact_Sales` lưu số lượng, đơn giá, doanh thu nguồn, doanh thu tính toán, giá trị chênh lệch và khóa liên kết đến các bảng Dimension.
+The SQLite Warehouse contains the analytical tables used for data verification.
 
-### 3.1. Vị trí dữ liệu đầu ra
+The Power BI Dashboard reads the Warehouse CSV files rather than connecting directly to SQLite.
 
-Kho dữ liệu SQLite:
+---
 
-`data/warehouse/mekong_mobile.db`
+## 4. Data Transformation and Quality Rules
 
-Các bảng Warehouse dạng CSV được xuất trong:
+### 4.1. Transformation Process
 
-`data/warehouse/`
+The pipeline performs the following operations:
 
-Dữ liệu chi tiết đã xử lý:
+1. Extracts data from the four source CSV files.
+2. Normalizes column names and data types.
+3. Checks required identifiers and numeric values.
+4. Separates rejected records from accepted records.
+5. Calculates sales amounts for reconciliation.
+6. Normalizes valid sales dates.
+7. Creates Product, Store, and Date dimensions.
+8. Creates the Sales Fact table.
+9. Exports Warehouse CSV files.
+10. Loads the SQLite Data Warehouse.
 
-`data/processed/clean_order_items.csv`
+### 4.2. Main Validation and Transformation Rules
 
-Dữ liệu bị từ chối:
+| Field or Condition | Rule | Handling |
+|---|---|---|
+| `order_id` | Must contain a valid order identifier | Apply input validation rules |
+| `product_id` | Must contain a valid product identifier | Apply input validation rules |
+| `quantity` | Must be a positive number | Invalid values are handled by the quality checks |
+| `unit_price` | Must be non-negative | Invalid values are handled by the quality checks |
+| `reported_sales_amount` | Must be non-negative | Preserve valid source values |
+| `ngay` | Normalize the source sales date | Do not create a date when the source date is missing |
+| `ma_don` | Does not need to be unique | Preserve repeated values according to BR06 |
+| `source_line_id` | Identifies a source detail row | Supports row preservation and repeated execution |
+| Sales amount mismatch | Compare reported and calculated amounts | Mark as `MISMATCH`; do not overwrite the original amount |
+| Fully duplicated source rows | No confirmed business rule for automatic removal | Do not remove automatically |
+
+Rejected records are stored in:
 
 `data/rejected/rejected_order_items.csv`
 
-Cấu trúc cột, kiểu dữ liệu và ràng buộc được mô tả trong `docs/data-dictionary.md`.
+The rejected data includes information about the validation reason.
 
-## 4. Quy tắc biến đổi và chất lượng dữ liệu
+A revenue mismatch is not automatically classified as a rejected record.
 
-### 4.1. Các bước xử lý
+### 4.3. Full Dataset Profile
 
-1. Đọc dữ liệu từ bốn file CSV nguồn.
-2. Chuẩn hóa tên cột và kiểu dữ liệu.
-3. Kiểm tra mã định danh và dữ liệu số.
-4. Phân loại dòng hợp lệ và dòng bị từ chối.
-5. Tính doanh thu đối chiếu và giá trị chênh lệch.
-6. Chuẩn hóa ngày và xây dựng các bảng Dimension.
-7. Xây dựng bảng Fact và liên kết khóa.
-8. Xuất dữ liệu Warehouse ra CSV.
-9. Tạo cơ sở dữ liệu SQLite và kiểm tra khóa ngoại.
+The main dataset contains:
 
-### 4.2. Bảng quy tắc xử lý dữ liệu
-
-| Dữ liệu | Quy tắc | Cách xử lý |
-|---|---|---|
-| `order_id` | Kiểm tra định danh đơn hàng | Đánh giá theo quy tắc kiểm tra dữ liệu đầu vào |
-| `product_id` | Kiểm tra định danh sản phẩm | Đánh giá theo quy tắc kiểm tra dữ liệu đầu vào |
-| `quantity` | Kiểm tra số lượng | Dữ liệu không hợp lệ được xử lý theo bộ lọc chất lượng |
-| `unit_price` | Kiểm tra đơn giá | Dữ liệu không hợp lệ được xử lý theo bộ lọc chất lượng |
-| `reported_sales_amount` | Kiểm tra doanh thu nguồn | Giữ nguyên giá trị hợp lệ để đối soát |
-| `ngay` | Chuẩn hóa ngày bán | Không tự tạo ngày khi nguồn thiếu |
-| `ma_don` | Không yêu cầu duy nhất | Giữ nguyên các giá trị lặp theo BR06 |
-| `source_line_id` | Định danh dòng nguồn | Phục vụ bảo toàn dòng và chạy lại ETL |
-| Doanh thu chênh lệch | So sánh doanh thu nguồn và doanh thu tính toán | Đánh dấu `MISMATCH`, không tự ghi đè |
-| Dòng trùng hoàn toàn | Chưa có quy tắc xác nhận là dữ liệu sai | Không tự động loại bỏ |
-
-Các dòng bị từ chối trong quá trình kiểm tra dữ liệu đầu vào được lưu tại `data/rejected/rejected_order_items.csv`, kèm lý do từ chối.
-
-**Lưu ý:** Bảng trên mô tả các quy tắc theo thiết kế và luồng xử lý hiện tại. Số dòng bị từ chối phải lấy từ kết quả chạy ETL thực tế, không suy ra từ số dòng chênh lệch doanh thu.
-
-### 4.3. Thống kê xử lý dữ liệu nguồn
-
-Kết quả profiling trên bộ dữ liệu đầy đủ:
-
-| Chỉ tiêu | Số lượng |
+| Metric | Value |
 |---|---:|
-| Đơn hàng nguồn | 26.000 |
-| Dòng chi tiết bán hàng | 35.697 |
-| Sản phẩm | 320 |
-| Cửa hàng | 24 |
-| Đơn hàng thiếu ngày | 114 |
-| Dòng chi tiết có doanh thu khớp | 35.177 |
-| Dòng chi tiết có doanh thu chênh lệch | 520 |
+| Source orders | 26,000 |
+| Order-item rows | 35,697 |
+| Products | 320 |
+| Stores | 24 |
+| Orders with missing dates | 114 |
+| Sales rows with matching amounts | 35,177 |
+| Sales rows with mismatched amounts | 520 |
 
-Theo kết quả kiểm thử ETL đã ghi nhận trong Data Dictionary, bảng `Fact_Sales` chứa 35.697 dòng trên bộ dữ liệu đầy đủ.
+The analytical `fact_sales` table contains 35,697 rows in the verified full-dataset result.
 
-Số dòng hợp lệ và số dòng bị từ chối ở bước lọc đầu vào cần đối chiếu trực tiếp với log ETL và file `rejected_order_items.csv` của cùng lần chạy trước khi đưa vào bảng thống kê chính thức.
+The number of rejected rows must be checked from the ETL log and rejected CSV file for the same execution.
 
-### 4.4. Công thức đối soát doanh thu
+The figures above describe the full sales dataset. They must not be confused with the smaller Docker sample dataset.
 
-Các công thức được sử dụng:
+### 4.4. Sales Reconciliation
 
-`calculated_sales_amount = quantity × unit_price`
+The pipeline calculates the expected sales amount:
+
+`calculated_sales_amount = quantity * unit_price`
+
+It then calculates the difference:
 
 `difference_amount = reported_sales_amount - calculated_sales_amount`
 
-Quy tắc phân loại:
+The reconciliation status is assigned as follows:
 
-- `MATCH`: Doanh thu nguồn bằng doanh thu tính toán.
-- `MISMATCH`: Doanh thu nguồn khác doanh thu tính toán.
+- `MATCH`: The reported amount equals the calculated amount.
+- `MISMATCH`: The reported amount differs from the calculated amount.
 
-Hệ thống giữ nguyên `reported_sales_amount` nhằm bảo toàn dữ liệu phục vụ kiểm toán và đối soát.
+The original `reported_sales_amount` is preserved.
 
-### 4.5. Kết quả kiểm thử BR05 và BR09
+The pipeline does not automatically change the original sales value to match the calculated amount.
 
-Hai quy tắc BR05 và BR09 đã được kiểm tra trên toàn bộ 35.697 dòng chi tiết bán hàng thực tế.
+### 4.5. Verification of BR05 and BR09
 
-| Nội dung kiểm tra | Kết quả |
+The sales reconciliation logic was verified using all 35,697 source order-item rows.
+
+| Verification Item | Result |
 |---|---|
-| Tổng dòng dữ liệu | 35.697 |
-| Dòng `MATCH` | 35.177 |
-| Dòng `MISMATCH` | 520 |
-| Giữ nguyên doanh thu nguồn | PASS |
-| Tính doanh thu đối chiếu | PASS |
-| Tính giá trị chênh lệch | PASS |
-| Phân loại trạng thái đối soát | PASS |
+| Total order-item rows | 35,697 |
+| `MATCH` rows | 35,177 |
+| `MISMATCH` rows | 520 |
+| Preserve reported sales amount | PASS |
+| Calculate expected sales amount | PASS |
+| Calculate difference amount | PASS |
+| Assign reconciliation status | PASS |
 
-**Kết luận: Kiểm thử chức năng BR05/BR09 đạt PASS.**
+**Result: BR05 and BR09 functional verification passed.**
 
-520 dòng có chênh lệch được giữ lại phục vụ đối soát, không bị tự động chỉnh sửa hoặc loại bỏ.
+This result means that the reconciliation logic worked as expected.
 
-Kết quả PASS thể hiện **chức năng đối soát hoạt động đúng**, không có nghĩa là 100% doanh thu nguồn đã khớp với doanh thu tính toán.
+It does not mean that every reported source sales amount was correct.
 
-### 4.6. Đánh giá ba chiều chất lượng dữ liệu
+The 520 mismatched rows remain available for further business investigation.
 
-Chương trình kiểm tra chất lượng:
+### 4.6. Three Data Quality Dimensions
 
-`python scripts/check_data_quality_bt3.py`
+BT3 includes an additional data quality assessment program:
 
-Phạm vi: 27 cột thuộc bốn file CSV nguồn.
+`scripts/check_data_quality_bt3.py`
 
-| Chiều chất lượng | PASS | FAIL | N/A |
+This program evaluates 27 columns from the four source CSV files.
+
+Three data quality dimensions are measured:
+
+- **Completeness:** Checks whether required data values are present.
+- **Validity:** Checks whether non-missing values meet the implemented validation rules.
+- **Consistency:** Checks supported uniqueness rules, source relationships, and sales reconciliation.
+
+The assessment results are:
+
+| Data Quality Dimension | PASS | FAIL | N/A |
 |---|---:|---:|---:|
-| Completeness – Tính đầy đủ | 26 | 1 | 0 |
-| Validity – Tính hợp lệ | 27 | 0 | 0 |
-| Consistency – Tính nhất quán | 8 | 1 | 18 |
+| Completeness | 26 | 1 | 0 |
+| Validity | 27 | 0 | 0 |
+| Consistency | 8 | 1 | 18 |
 
-Trong đó:
+`N/A` means that no applicable consistency rule was defined for that column. It must not be counted as PASS.
 
-- Completeness đo tỷ lệ dữ liệu không bị thiếu.
-- Validity đo tỷ lệ các giá trị không rỗng đáp ứng quy tắc kiểm tra đã triển khai.
-- Consistency kiểm tra tính duy nhất, khóa liên kết và đối soát doanh thu ở những cột có quy tắc phù hợp.
-- `N/A` nghĩa là không có quy tắc đối chiếu được định nghĩa, không được xem là PASS.
+The thresholds are project-level assessment thresholds, not official quality standards issued by Mekong Mobile.
 
-Các ngưỡng kiểm tra là ngưỡng đề xuất phục vụ đồ án sinh viên, không phải tiêu chuẩn chính thức của Mekong Mobile.
-
-Ngưỡng theo từng cột và kết quả chi tiết được lưu trong:
+Detailed results are stored in:
 
 - `docs/evidence/data_quality_bt3.json`
 - `docs/evidence/data_quality_bt3.csv`
 
-### 4.7. Các vấn đề chất lượng dữ liệu được phát hiện
+### 4.7. Identified Data Quality Issues
 
-**DQ-01: Thiếu thông tin nhân viên**
+#### DQ-01: Missing Employee Information
 
-| Thuộc tính | Kết quả |
+| Attribute | Result |
 |---|---|
-| File nguồn | `orders_2024_2026.csv` |
-| Cột | `nhan_vien` |
-| Completeness | 96,11% |
-| Ngưỡng yêu cầu | 99% |
-| Kết quả | FAIL |
+| Source file | `orders_2024_2026.csv` |
+| Column | `nhan_vien` |
+| Completeness | 96.11% |
+| Required threshold | 99% |
+| Status | FAIL |
 
-Ảnh hưởng nghiệp vụ: Các báo cáo phân tích doanh thu theo nhân viên có thể không đầy đủ nếu dữ liệu thiếu không được xử lý hoặc phân loại rõ ràng.
+Some orders do not contain employee information.
 
-**DQ-02: Chênh lệch doanh thu**
+This may affect reports that analyze sales performance by employee.
 
-| Thuộc tính | Kết quả |
+The missing values are reported rather than silently replaced.
+
+#### DQ-02: Sales Amount Mismatch
+
+| Attribute | Result |
 |---|---|
-| File nguồn | `order_items.csv` |
-| Cột | `thanh_tien` |
-| Consistency | 98,54% |
-| Ngưỡng yêu cầu | 99% |
-| Dòng khớp | 35.177 |
-| Dòng chênh lệch | 520 |
-| Kết quả | FAIL |
+| Source file | `order_items.csv` |
+| Column | `thanh_tien` |
+| Consistency | 98.54% |
+| Required threshold | 99% |
+| Matching rows | 35,177 |
+| Mismatched rows | 520 |
+| Status | FAIL |
 
-Ảnh hưởng nghiệp vụ: Có thể dẫn đến cách diễn giải doanh thu khác nhau nếu chưa xác định được nguyên nhân chênh lệch.
+The reported sales amounts do not match the calculated amounts in 520 rows.
 
-Biện pháp hiện tại: Giữ nguyên dữ liệu nguồn, lưu giá trị tính toán và trạng thái đối soát để phục vụ kiểm tra tiếp theo.
+The pipeline preserves the original amounts and records the differences.
 
-Không tự kết luận các chênh lệch này là thuế, khuyến mãi hoặc lỗi nhập liệu khi chưa có bằng chứng.
+The cause of these differences has not been confirmed.
 
-### 4.8. Giới hạn của phép đo chất lượng
+They must not automatically be classified as discounts, taxes, or input errors without further evidence.
 
-Đối với các cột văn bản chưa có quy tắc định dạng chuyên biệt, Validity mới được đánh giá ở mức không rỗng.
+### 4.8. Data Quality Limitations
 
-Do đó, kết quả 27/27 cột đạt ngưỡng Validity không có nghĩa rằng toàn bộ dữ liệu đã được kiểm tra đầy đủ về mặt nghiệp vụ.
+Validity checks are based on the rules implemented in the assessment script.
 
-Những cột chưa có quy tắc Consistency phù hợp được ghi `N/A` thay vì mặc định đạt 100%.
+For text fields without specific format rules, validity is mainly evaluated using non-empty values.
 
-## 5. Lịch chạy và xử lý lại dữ liệu
+Therefore, 27 PASS results for Validity do not prove that every field is fully correct in all business situations.
 
-### 5.1. Cơ chế chạy hiện tại
+Columns without applicable Consistency rules are reported as `N/A`, not automatically treated as valid.
 
-Quy trình ETL hoạt động theo mô hình xử lý theo lô (Batch ETL).
+---
 
-Hệ thống hiện được chạy thủ công bằng Python hoặc Docker Compose.
+## 5. Data Protection and PII Handling
 
-Lệnh chạy bằng Docker:
+The source file `orders_2024_2026.csv` contains customer-related fields such as:
 
-```bash
-docker compose run --build --rm pipeline
-```
+- `ten_khach`
+- `so_dien_thoai`
 
-Chưa triển khai cơ chế lập lịch tự động trên môi trường production.
+These fields are not included in the 28-column analytical SQLite Star Schema.
 
-### 5.2. Chạy lại và xử lý dữ liệu lịch sử
+The Warehouse stores the information needed for sales analysis without directly exporting these two customer identifiers.
 
-Khi dữ liệu nguồn được sửa hoặc cần xử lý lại dữ liệu lịch sử, hệ thống thực hiện chạy lại ETL trên bộ dữ liệu nguồn đầy đủ.
+The file `customers_raw.csv` is not part of the current analytical ETL pipeline.
 
-Quy trình hiện tại sử dụng Full Refresh, chưa hỗ trợ Incremental Loading.
+This reduces the exposure of personal information in analytical outputs.
 
-Các bảng Warehouse CSV được tạo lại và cơ sở dữ liệu SQLite được xây dựng lại từ dữ liệu đã xử lý.
+However, the source CSV files may still contain personal information and must be stored and shared carefully.
 
-Cơ chế này giúp tránh việc nối thêm các bản ghi trùng khi chạy nhiều lần trên cùng bộ dữ liệu không thay đổi.
+The current prototype does not provide complete data anonymization, database encryption, or production-grade access control.
 
-### 5.3. Kiểm tra khả năng tái lập
+### 5.1. Data Protection Verification
 
-Docker đã được kiểm thử trên GitHub Actions với môi trường Ubuntu Linux.
+The analytical tables are:
 
-Các bước kiểm tra đã thực hiện:
-
-- Xây dựng Docker Image và chạy ETL.
-- Xác nhận SQLite Data Warehouse được tạo.
-- Kiểm tra bốn bảng đích.
-- Chạy lại ETL trên bộ dữ liệu mẫu.
-- Xác nhận không phát sinh bản ghi bán hàng trùng khi chạy lại.
-
-Kết quả: **PASS**.
-
-### 5.4. Dữ liệu mẫu Docker
-
-Bộ dữ liệu Docker được đóng gói từ thư mục `data/sample/`.
-
-Nếu muốn chạy trên bộ dữ liệu khác, cần chuẩn bị dữ liệu nguồn và cấu hình triển khai phù hợp.
-
-Phiên bản hiện tại chưa cung cấp cơ chế tự động đồng bộ dữ liệu mới từ hệ thống bán hàng.
-
-## 6. Giới hạn và rủi ro hiện tại
-
-| Giới hạn | Ảnh hưởng |
-|---|---|
-| Dữ liệu nguồn là file CSV cục bộ | Chưa tự động nhận dữ liệu từ hệ thống bán hàng |
-| SQLite là cơ sở dữ liệu dạng file | Chưa phù hợp cho hệ thống nhiều người dùng đồng thời ở quy mô lớn |
-| Chưa có Incremental Loading | Phải xử lý lại toàn bộ dữ liệu khi chạy ETL |
-| Chưa có lịch chạy tự động | Dữ liệu Dashboard không tự cập nhật theo thời gian thực |
-| Chưa hỗ trợ Slowly Changing Dimensions | Chưa lưu lịch sử thay đổi thuộc tính sản phẩm và cửa hàng |
-| Chưa triển khai mã hóa file SQLite | Cần kiểm soát quyền truy cập file và môi trường lưu trữ |
-| Power BI chạy ngoài Docker | Dashboard không được tự động khởi động cùng container ETL |
-| Có 520 dòng chênh lệch doanh thu | Cần đối soát nghiệp vụ trước khi kết luận nguyên nhân |
-| Thiếu thông tin nhân viên ở một số đơn hàng | Có thể ảnh hưởng báo cáo phân tích theo nhân viên |
-| Chưa kiểm chứng Docker Desktop trực tiếp trên Windows | Minh chứng Docker hiện tại dựa trên GitHub Actions Ubuntu Linux |
-
-### 6.1. Giới hạn về độ trễ dữ liệu
-
-Hệ thống chưa có cơ chế cập nhật tự động hoặc đồng bộ thời gian thực.
-
-Thời điểm dữ liệu xuất hiện trong Warehouse phụ thuộc vào lần thực thi ETL gần nhất.
-
-Do chưa triển khai bộ lập lịch production, hệ thống chưa có cam kết thời gian cập nhật dữ liệu cố định.
-
-## 7. Kiểm chứng kết quả triển khai
-
-### 7.1. Kiểm tra chạy ETL
-
-Khi chạy thành công, chương trình hiển thị:
-
-```text
-=== HOAN THANH ETL ===
-```
-
-### 7.2. Kiểm tra các bảng SQLite
-
-Các bảng cần tồn tại:
-
+- `fact_sales`
 - `dim_date`
 - `dim_product`
 - `dim_store`
-- `fact_sales`
 
-Số dòng mong đợi với dữ liệu mẫu Docker:
+Their structures can be inspected using SQLite:
 
-| Bảng | Số dòng |
+`PRAGMA table_info(fact_sales);`
+
+The same check can be performed for each Dimension table.
+
+The verification confirms that `ten_khach` and `so_dien_thoai` are not present in the analytical table definitions.
+
+It does not prove that all source data has been anonymized.
+
+---
+
+## 6. Scheduling, Rerun, and Historical Data
+
+### 6.1. Current Execution Model
+
+The ETL pipeline uses batch processing.
+
+It can be executed manually through Python or Docker Compose.
+
+Docker execution command:
+
+`docker compose run --build --rm pipeline`
+
+An automated production schedule has not been implemented.
+
+### 6.2. Full Refresh
+
+The current pipeline uses a Full Refresh approach.
+
+When the source dataset changes, the pipeline processes the available input files again and rebuilds the analytical outputs.
+
+The project does not currently support Incremental Loading.
+
+### 6.3. Rerun Verification
+
+The ETL pipeline was tested by running the same sample dataset more than once.
+
+The following behavior was verified:
+
+- The ETL pipeline completed successfully.
+- SQLite Warehouse tables were created.
+- The second run did not increase the number of Fact rows.
+- The sample `fact_sales` table still contained four rows.
+
+**Result: PASS for the tested rerun scenario.**
+
+This result does not guarantee correct behavior under every possible failure or recovery scenario.
+
+### 6.4. Docker Sample Dataset
+
+The Docker deployment uses the files in:
+
+`data/sample/`
+
+Expected SQLite results:
+
+| Table | Expected Records |
 |---|---:|
 | `dim_date` | 3 |
 | `dim_product` | 3 |
 | `dim_store` | 2 |
 | `fact_sales` | 4 |
 
-Các số liệu trên áp dụng cho bộ dữ liệu mẫu Docker, không phải toàn bộ dữ liệu bán hàng.
+The sample dataset is included for deployment verification.
 
-### 7.3. Kiểm thử hồi quy
+It is separate from the full dataset used for Data Quality analysis.
 
-Bộ kiểm thử hồi quy đã ghi nhận 14 test PASS trong quá trình chuẩn bị BT3.
+### 6.5. Data Freshness
 
-Bài kiểm thử riêng cho BR05/BR09 cũng được bổ sung để kiểm tra việc bảo toàn doanh thu nguồn, tính chênh lệch và phân loại trạng thái.
+The project does not support real-time processing.
 
-### 7.4. Minh chứng
+The Warehouse is updated only when the batch ETL pipeline runs.
 
-| Minh chứng | Đường dẫn |
+There is no guaranteed production refresh schedule in the current prototype.
+
+---
+
+## 7. Deployment Verification, Risks, and Limitations
+
+### 7.1. Deployment Verification
+
+Docker execution was tested using GitHub Actions on Ubuntu Linux.
+
+The verification covered:
+
+1. Docker Image build.
+2. ETL execution.
+3. SQLite Warehouse creation.
+4. Record counts of the four analytical tables.
+5. ETL rerun without duplicated Fact rows.
+6. Automated pytest execution inside Docker.
+
+A separate GitHub Actions workflow also verified deployment from a clean clone of Git tag `v1.0`.
+
+The Docker-based execution was successful in the tested GitHub Actions environment.
+
+The latest detailed pytest count should be taken from the corresponding workflow log.
+
+### 7.2. Automated Tests
+
+The project includes a pytest suite in:
+
+`tests/`
+
+The current Dockerfile includes the test directory.
+
+Run the tests inside Docker using:
+
+`docker compose run --rm pipeline python -m pytest tests/ -v`
+
+An earlier regression run recorded 14 passing tests.
+
+Additional BT3 tests were later introduced, so the earlier count must not be presented as the result of the latest Docker run.
+
+### 7.3. Current Risks and Limitations
+
+| Limitation | Impact |
 |---|---|
-| Kết quả Docker PASS | `docs/evidence/docker_pass_BT3.PNG` |
-| Cấu hình GitHub Actions | `.github/workflows/docker-test.yml` |
-| Báo cáo chất lượng JSON | `docs/evidence/data_quality_bt3.json` |
-| Báo cáo chất lượng CSV | `docs/evidence/data_quality_bt3.csv` |
-| Chương trình đánh giá chất lượng | `scripts/check_data_quality_bt3.py` |
-| Chương trình đối soát doanh thu | `src/transform/transform_sales.py` |
+| Source data is stored in local CSV files | No automatic integration with external sales systems |
+| SQLite is a file-based database | Limited suitability for large-scale concurrent production workloads |
+| Full Refresh only | All available data is processed again during each ETL run |
+| No production scheduler | Warehouse data does not refresh automatically |
+| No Incremental Loading | New data cannot be loaded incrementally through the current implementation |
+| No Slowly Changing Dimensions | Historical product and store attribute changes are not tracked through an SCD mechanism |
+| No SQLite encryption | Database files require appropriate external protection |
+| Power BI runs outside Docker | The dashboard is not automatically launched by the ETL container |
+| 520 sales amount mismatches | Further business reconciliation may be required |
+| Missing employee information | Employee-based analysis may be incomplete |
+| Docker Desktop not verified on Windows | Docker evidence currently comes from GitHub Actions on Ubuntu Linux |
+
+### 7.4. Evidence and Supporting Files
+
+| Evidence | Repository Path |
+|---|---|
+| Docker verification screenshot | `docs/evidence/docker_pass_BT3.PNG` |
+| Docker testing workflow | `.github/workflows/docker-test.yml` |
+| Three-dimension quality results (JSON) | `docs/evidence/data_quality_bt3.json` |
+| Three-dimension quality results (CSV) | `docs/evidence/data_quality_bt3.csv` |
+| Data quality assessment script | `scripts/check_data_quality_bt3.py` |
+| Sales reconciliation logic | `src/transform/transform_sales.py` |
+| SQLite schema | `src/warehouse/schema.sql` |
 | Data Dictionary | `docs/data-dictionary.md` |
-| Quy tắc nghiệp vụ | `docs/srs.md` |
+| Business requirements | `docs/srs.md` |
+| Deployment Guide | `docs/deployment-guide.md` |
 
-**Kết luận:** Quy trình ETL đã được kiểm thử chức năng đối soát và kiểm chứng chạy Docker trên GitHub Actions. Các vấn đề chất lượng dữ liệu nguồn và giới hạn triển khai vẫn được ghi nhận để tiếp tục theo dõi.
-## 11. Data Dictionary chi tiết theo yêu cầu BT3
+### 7.5. Conclusion
 
-### 11.1. Quy ước đánh giá
+The Mekong Mobile ETL pipeline processes sales data from CSV files and generates analytical tables in CSV and SQLite formats.
 
-Mỗi cột trong kho dữ liệu được mô tả theo sáu thông tin:
+The project includes data validation, rejected-record handling, sales reconciliation, and a three-dimension Data Quality assessment.
 
-1. **Kiểu dữ liệu:** Kiểu dữ liệu được sử dụng trong SQLite.
-2. **Ý nghĩa:** Mục đích và nội dung của cột.
-3. **Giá trị hợp lệ:** Miền giá trị hoặc quy tắc kiểm tra.
-4. **Cho phép NULL:** Cột có được phép chứa giá trị NULL hay không.
-5. **Phân loại dữ liệu:** Mức độ nhạy cảm của thông tin.
-6. **Xử lý bảo mật:** Cách quản lý hoặc bảo vệ dữ liệu.
+Docker deployment and automated testing have been successfully verified through GitHub Actions.
 
-Các thông tin được xây dựng dựa trên cấu trúc SQLite của dự án tại `src/warehouse/schema.sql`.
+Two source data quality issues remain below their defined thresholds. These issues are documented instead of being hidden or automatically corrected.
 
-### 11.2. Bảng Fact_Sales
-
-| Cột | Kiểu SQLite | Ý nghĩa | Giá trị hợp lệ | NULL | Phân loại | Xử lý bảo mật |
-|---|---|---|---|---|---|---|
-| `sales_key` | INTEGER | Khóa chính của dòng bán hàng | Số nguyên duy nhất | Không | Nội bộ | Kiểm tra khóa chính |
-| `source_line_id` | TEXT | Định danh dòng dữ liệu nguồn | Chuỗi không rỗng, duy nhất | Không | Nội bộ | Kiểm soát truy cập dữ liệu nguồn |
-| `order_id` | TEXT | Mã định danh đơn hàng | Chuỗi không rỗng | Không | Nội bộ | Không công khai dữ liệu giao dịch |
-| `date_key` | INTEGER | Khóa liên kết ngày bán | Ngày hợp lệ dạng YYYYMMDD hoặc NULL | Có | Nội bộ | Kiểm tra khóa ngoại |
-| `product_key` | INTEGER | Khóa liên kết sản phẩm | Khóa tồn tại trong Dim_Product | Không | Nội bộ | Kiểm tra khóa ngoại |
-| `store_key` | INTEGER | Khóa liên kết cửa hàng | Khóa tồn tại trong Dim_Store | Không | Nội bộ | Kiểm tra khóa ngoại |
-| `quantity` | INTEGER | Số lượng sản phẩm bán | Số nguyên lớn hơn 0 | Không | Nội bộ | Kiểm tra ràng buộc CHECK |
-| `unit_price` | INTEGER | Đơn giá sản phẩm | Số nguyên không âm | Không | Nhạy cảm kinh doanh | Hạn chế chia sẻ dữ liệu giá |
-| `reported_sales_amount` | INTEGER | Doanh thu được ghi nhận từ nguồn | Số nguyên không âm | Không | Nhạy cảm kinh doanh | Bảo toàn giá trị nguồn, giới hạn truy cập |
-| `calculated_sales_amount` | INTEGER | Doanh thu được tính theo số lượng và đơn giá | Bằng `quantity × unit_price` | Không | Nhạy cảm kinh doanh | Kiểm tra công thức tính toán |
-| `difference_amount` | INTEGER | Chênh lệch giữa doanh thu nguồn và doanh thu tính toán | Số nguyên, có thể âm, bằng 0 hoặc dương | Không | Nhạy cảm kinh doanh | Lưu để đối soát, không tự chỉnh sửa |
-| `reconciliation_status` | TEXT | Trạng thái đối soát doanh thu | `MATCH` hoặc `MISMATCH` | Không | Nội bộ | Kiểm tra trạng thái và lưu kết quả đối soát |
-
-**Tổng số cột: 12.**
-
-### 11.3. Bảng Dim_Date
-
-| Cột | Kiểu SQLite | Ý nghĩa | Giá trị hợp lệ | NULL | Phân loại | Xử lý bảo mật |
-|---|---|---|---|---|---|---|
-| `date_key` | INTEGER | Khóa chính của ngày | Số nguyên dạng YYYYMMDD, duy nhất | Không | Nội bộ | Kiểm tra khóa chính |
-| `full_date` | TEXT | Ngày đầy đủ | Ngày hợp lệ theo định dạng lưu trữ của ETL | Không | Nội bộ | Kiểm tra định dạng ngày |
-| `day` | INTEGER | Ngày trong tháng | 1–31, phù hợp ngày thực tế | Không | Nội bộ | Kiểm tra giá trị ngày |
-| `month` | INTEGER | Tháng trong năm | 1–12 | Không | Nội bộ | Kiểm tra miền giá trị |
-| `quarter` | INTEGER | Quý trong năm | 1–4 | Không | Nội bộ | Kiểm tra tính nhất quán với tháng |
-| `year` | INTEGER | Năm của ngày bán | Năm hợp lệ từ ngày nguồn đã chuẩn hóa | Không | Nội bộ | Kiểm tra tính nhất quán với ngày |
-
-**Tổng số cột: 6.**
-
-### 11.4. Bảng Dim_Product
-
-| Cột | Kiểu SQLite | Ý nghĩa | Giá trị hợp lệ | NULL | Phân loại | Xử lý bảo mật |
-|---|---|---|---|---|---|---|
-| `product_key` | INTEGER | Khóa thay thế của sản phẩm | Số nguyên duy nhất | Không | Nội bộ | Kiểm tra khóa chính |
-| `product_id` | TEXT | Mã sản phẩm từ dữ liệu nguồn | Chuỗi không rỗng, duy nhất | Không | Nội bộ | Kiểm tra ràng buộc UNIQUE |
-| `product_name` | TEXT | Tên sản phẩm | Chuỗi văn bản hoặc NULL | Có | Nội bộ | Chỉ sử dụng cho mục đích phân tích |
-| `brand` | TEXT | Thương hiệu sản phẩm | Chuỗi văn bản hoặc NULL | Có | Nội bộ | Kiểm soát truy cập dữ liệu |
-| `category` | TEXT | Nhóm sản phẩm | Chuỗi văn bản hoặc NULL | Có | Nội bộ | Kiểm soát truy cập dữ liệu |
-
-**Tổng số cột: 5.**
-
-### 11.5. Bảng Dim_Store
-
-| Cột | Kiểu SQLite | Ý nghĩa | Giá trị hợp lệ | NULL | Phân loại | Xử lý bảo mật |
-|---|---|---|---|---|---|---|
-| `store_key` | INTEGER | Khóa thay thế của cửa hàng | Số nguyên duy nhất | Không | Nội bộ | Kiểm tra khóa chính |
-| `store_code` | TEXT | Mã cửa hàng từ nguồn | Chuỗi không rỗng, duy nhất | Không | Nội bộ | Kiểm tra ràng buộc UNIQUE |
-| `store_name` | TEXT | Tên cửa hàng | Chuỗi văn bản hoặc NULL | Có | Nội bộ | Giới hạn truy cập dữ liệu |
-| `city` | TEXT | Thành phố của cửa hàng | Chuỗi văn bản hoặc NULL | Có | Nội bộ | Chỉ sử dụng cho phân tích khu vực |
-| `district` | TEXT | Quận/huyện của cửa hàng | Chuỗi văn bản hoặc NULL | Có | Nội bộ | Chỉ sử dụng cho phân tích khu vực |
-
-**Tổng số cột: 5.**
-
-### 11.6. Kiểm tra dữ liệu nhạy cảm và thông tin cá nhân
-
-Dữ liệu nguồn `orders_2024_2026.csv` có chứa các thông tin như `ten_khach` và `so_dien_thoai`.
-
-Các cột này không nằm trong danh sách 28 cột của bốn bảng đích Star Schema hiện tại.
-
-Việc không đưa trực tiếp tên và số điện thoại khách hàng vào bảng Fact và Dimension giúp giảm nguy cơ lộ thông tin cá nhân trong dữ liệu phân tích.
-
-Tuy nhiên, các file CSV nguồn vẫn cần được kiểm soát quyền truy cập và không nên công khai khi chứa dữ liệu cá nhân thực tế.
-
-### 11.7. Tổng hợp Data Dictionary
-
-| Bảng đích | Số cột |
-|---|---:|
-| Fact_Sales | 12 |
-| Dim_Date | 6 |
-| Dim_Product | 5 |
-| Dim_Store | 5 |
-| **Tổng cộng** | **28** |
-
-Toàn bộ 28 cột đã được mô tả theo sáu nhóm thông tin của tiêu chí D2.
-
-Các quy tắc về khóa chính, khóa ngoại, NULL và kiểu dữ liệu cần được đối chiếu với `src/warehouse/schema.sql` khi có thay đổi cấu trúc hệ thống.
-
-**Giới hạn bảo mật:** Phiên bản hiện tại chưa triển khai mã hóa file SQLite ở trạng thái lưu trữ. Các biện pháp kiểm soát truy cập được nêu trong tài liệu là chính sách cần áp dụng tại môi trường sử dụng, không đồng nghĩa với việc hệ thống đã có cơ chế phân quyền người dùng hoàn chỉnh.
+The prototype is suitable for academic demonstration and further development, subject to the limitations described above.
